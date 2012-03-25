@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Get Outta Here</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
+<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>-->
+<script src="{{ url_for('static', filename='js/jquery-1.7.1.min.js')}}"></script>
+{% block head %}{% endblock %}
+</head>
+
+<body>
+<div id="wrap">
+  <div id="header">
+       <span><a href="/">GetOuttaHere</a></span>
+       <span><a href="#">commands</a></span>
+       <span><a href="#">pricing</a></span>
+  </div>
+
+  <div class="main">
+    {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+	<div id="bodyBlock" >
+    {% block body %}{% endblock %}
+    </div>
+  </div>
+</div>
+  <div id="footer">
+    Contact support@getouttahere.me for questions/concerns
+  </div>
+</body>
+</html>
