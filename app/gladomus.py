@@ -51,7 +51,7 @@ def error(error_msg):
 
 @app.route('/hangup', methods=["POST"])
 def hangup():
-  return
+  return json_res({'success': 'hit hangup'})
 
 @app.route('/requests', methods=["POST"])
 def requests():
@@ -83,9 +83,9 @@ def requests():
   else:
     # they need to pay
     db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
-    com.sendError(fromNumber, "You have used up your GetOuttaHere calls/texts. Please subscribe at www.gladomus.com")
+    com.sendMsg("You have used up your Gladomus calls/texts. Please subscribe at www.gladomus.com", fromNumber)
   
-  return
+  return json_res({'success': 'hit requests'})
 
 @app.route('/pay', methods=['POST'])
 def oliners():

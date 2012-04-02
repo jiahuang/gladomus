@@ -153,6 +153,6 @@ class Commander:
 
   def sendMsg(self, msg, number):
     message = client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
-    #print msg
+    print msg
 
 
