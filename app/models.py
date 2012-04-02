@@ -1,21 +1,10 @@
 import datetime
-import pymongo
-from mongokit import Connection, Document
-
-DATABASE_GET = 'get'
-MONGODB_HOST = 'localhost'
-MONGODB_PORT = 27017
-DEBUG = True
-SECRET_KEY = 'getOuttaHereKey'
-
-connection = Connection(MONGODB_HOST, MONGODB_PORT)
-db = connection.get
-
+from globalConfigs import *
 
 @connection.register
 class Numbers(Document):
   __collection__ = 'numbers'
-  __database__ = DATABASE_GET
+  __database__ = DATABASE_GLAD
   structure = {
     'number' : int,
     'email' : unicode,
@@ -36,22 +25,24 @@ class Numbers(Document):
 @connection.register
 class Actions(Document):
   __collection__ = 'actions'
-  __database__ = DATABASE_GET
+  __database__ = DATABASE_GLAD
   structure = {
+    'original' : unicode, # original command
     'number' : int,
-    'minute' : int,
-    'command' : unicode,
-    'time' : datetime.datetime
+    'msg' : unicode,
+    'command' : unicode, # parsed command
+    'time' : datetime.datetime # time to execute
   }
   use_dot_notation = True 
 
 @connection.register
-class ReqCmd(Document):
-  __collection__ = 'reqcmd'
-  __database__ = DATABASE_GET
+class ReqCmds(Document):
+  __collection__ = 'reqCmds'
+  __database__ = DATABASE_GLAD
   structure = {
     'number' : int,
     'request' : unicode,
-    'time' : datetime.datetime
+    'time' : datetime.datetime,
+    'msg' : unicode
   }
   use_dot_notation = True 
