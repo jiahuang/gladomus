@@ -1,4 +1,5 @@
 import datetime
+from logger import log
 from globalConfigs import *
 
 @connection.register

@@ -5,6 +5,7 @@ import urllib2
 import simplejson
 from bingMapParser import BingMapParser
 import re
+import logger.log
 
 class Commander:
   def __init__(self):
@@ -152,7 +153,7 @@ class Commander:
         self.sendMsg(res["error"], fromNumber)
 
   def sendMsg(self, msg, number):
-    message = client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
-    print msg
+    message = self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
+    log('text', number+':'+msg)
 
 
