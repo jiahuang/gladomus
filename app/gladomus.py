@@ -65,7 +65,7 @@ def request():
   
   com = Commander()
   
-  if not number or if len(number.requests) <=3:
+  if not number or len(number.requests) <=3:
     # add it to cmd queue and add it to numbers collection
     if not number:
       number = db.Numbers()
