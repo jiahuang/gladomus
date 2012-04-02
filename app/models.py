@@ -6,7 +6,7 @@ class Numbers(Document):
   __collection__ = 'numbers'
   __database__ = DATABASE_GLAD
   structure = {
-    'number' : int,
+    'number' : unicode,
     'email' : unicode,
     'active' : datetime.datetime,
     'requests' : [{	
@@ -28,7 +28,7 @@ class Actions(Document):
   __database__ = DATABASE_GLAD
   structure = {
     'original' : unicode, # original command
-    'number' : int,
+    'number' : unicode,
     'msg' : unicode,
     'command' : unicode, # parsed command
     'time' : datetime.datetime # time to execute
@@ -40,7 +40,7 @@ class ReqCmds(Document):
   __collection__ = 'reqCmds'
   __database__ = DATABASE_GLAD
   structure = {
-    'number' : int,
+    'number' : unicode,
     'request' : unicode,
     'time' : datetime.datetime,
     'msg' : unicode

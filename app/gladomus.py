@@ -49,26 +49,26 @@ def sendError(self, number, error):
 def error(error_msg):
   return render_template("error.html", error = error_msg)
 
-@app.route('/hangup')
+@app.route('/hangup', methods=["POST"])
 def hangup():
   return
 
-@app.route('/request')
-def request():
+@app.route('/requests', methods=["POST"])
+def requests():
   print "REACHED: /request\n"
   # this request should only be accessed through twilio
-  fromNumber = request.args.get('From', None)
-  msg = request.args.get('Body', None).lower()
+  fromNumber = request.form.get('From', None)
+  msg = request.form.get('Body', None).lower()
   print "fromNumber: "+fromNumber+'\n'
   print "msg: "+msg+'\n'
   currDate = datetime.datetime.utcnow()
   # check db
-  number = db.numbers.find({'number': fromNumber, 'active':{'$gte':currDate}})
+  number = db.numbers.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
   
   com = Commander()
   
-  if not number or len(number.requests) <=3:
+  if not number or number['active'] >= currDate or len(number['requests']) <= 3:
     # add it to cmd queue and add it to numbers collection
     if not number:
       number = db.Numbers()
