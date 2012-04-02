@@ -152,7 +152,7 @@ class Commander:
         self.sendMsg(res["error"], fromNumber)
 
   def sendMsg(self, msg, number):
-    #message = client.sms.messages.create(to="+1"+number, from_="+1"+TWILIO_NUM, body=msg)
-    print msg
+    message = client.sms.messages.create(to="+1"+number, from_="+1"+TWILIO_NUM, body=msg)
+    #print msg
 
 

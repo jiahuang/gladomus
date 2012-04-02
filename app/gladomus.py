@@ -55,9 +55,12 @@ def hangup():
 
 @app.route('/request')
 def request():
+  print "REACHED: /request\n"
   # this request should only be accessed through twilio
   fromNumber = request.args.get('From', None)
   msg = request.args.get('Body', None).lower()
+  print "fromNumber: "+fromNumber+'\n'
+  print "msg: "+msg+'\n'
   currDate = datetime.datetime.utcnow()
   # check db
   number = db.numbers.find({'number': fromNumber, 'active':{'$gte':currDate}})
@@ -75,7 +78,7 @@ def request():
       number.save()
     else:
       db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
-    
+    print "REACHED: db updated"
     com.parseCommand(msg, fromNumber)	
   else:
     # they need to pay
@@ -98,4 +101,4 @@ def main():
 ########################################################################
 
 if __name__ == '__main__':
-  app.run()
+  app.run(port=8000)
