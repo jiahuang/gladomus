@@ -7,5 +7,5 @@ def log(process, item):
 	now = datetime.datetime.now()
 	filename = 'glad:'+process+'_'+str(now.month)+'-'+str(now.day)+'.log'
 	f = open(filename, 'a')
-	f.write(str(now)+": "+str(item))+'\n'
+	f.write(str(now)+": "+item.encode('utf-8')+'\n')
 	f.close()

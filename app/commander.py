@@ -7,11 +7,12 @@ from bingMapParser import BingMapParser
 import re
 from logger import log
 from BeautifulSoup import BeautifulSoup
+import time
+from threading import Thread
+
+CLIENT = TwilioRestClient(TWILIO_SID, TWILIO_AUTH)
 
 class Commander:
-  def __init__(self):
-    self.client = TwilioRestClient(TWILIO_SID, TWILIO_AUTH)
-
   def mapCommand(self, cmd):
     # parse out command into mode, start, and end
     mode = cmd[0:6]
@@ -170,33 +171,45 @@ class Commander:
     if cmdHeader == "map":
       res = self.mapCommand(cmd)
       if "error" in res:
-        self.sendMsg(res["error"], fromNumber)
+        sendMsg(res["error"], fromNumber)
       else:
         msg = ""
         num = 1
         for i in res["success"]:
           msg = msg + str(num)+". "+i["directions"]+i["distance"]+' '
           num = num +1
-        self.sendMsg(msg, fromNumber)
+        self.processMsg(msg, fromNumber)
     elif cmdHeader == "call":
       res = self.callCommand(cmd, fromNumber)
       if "error" in res:
-        self.sendMsg(res["error"], fromNumber)
+        self.processMsg(res["error"], fromNumber)
     elif cmdHeader == 'wiki':
       res = self.wikiCommand(cmd)
       if "error" in res:
-        self.sendMsg(res["error"], fromNumber)
+        self.processMsg(res["error"], fromNumber)
       else:
-        self.sendMsg(res['success'], fromNumber)
-
-  def sendMsg(self, msg, number):
+        self.processMsg(res['success'], fromNumber)
+  
+  def processMsg(self, msg, number):
+    Sender(msg, number).start()
+    
+class Sender(Thread):
+  def __init__(self, msg, number):
+    self.msg = msg
+    self.number = number
+    Thread.__init__(self)
+  
+  def run(self):
     i = 0
-    while i < len(msg):
-      if i+160 <= len(msg):
-        self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:i+160])
+    while i < len(self.msg):
+      if i+160 <= len(self.msg):
+        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:i+160])
       else:
-        self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:])
+        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:])
       i = i + 160
-    log('text', number+':'+msg)
+      #sleep 2 seconds
+      if i < len(self.msg):
+        time.sleep(2)
+    log('text', self.number+':'+self.msg)
 
 

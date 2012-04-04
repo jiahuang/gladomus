@@ -57,15 +57,15 @@ class CommanderTest:
     print "=== end of MapTest ===\n"
 
   def parseTester(self):
-    cmds = ['wiki apple', 'map d s:4714 17th Ave NE, Seattle e:Microsoft Building 84, WA']
+    cmds = ['wiki apple']#, 'wiki pear', 'map d s:4714 17th Ave NE, Seattle e:Microsoft Building 84, WA']
     for cmd in cmds:
       self.c.parseCommand(cmd, '+19193971139')
 
 def main(name):
   tester = CommanderTest()
-  tester.mapTest()
-  tester.wikiTest()
-  #tester.parseTester()
+  #tester.mapTest()
+  #tester.wikiTest()
+  tester.parseTester()
 
 if __name__ == '__main__':
   main(*sys.argv)
