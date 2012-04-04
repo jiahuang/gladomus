@@ -5,7 +5,8 @@ import urllib2
 import simplejson
 from bingMapParser import BingMapParser
 import re
-import logger.log
+from logger import log
+from BeautifulSoup import BeautifulSoup
 
 class Commander:
   def __init__(self):
@@ -85,10 +86,44 @@ class Commander:
     except urllib2.URLError, e:
       return {"error": "Network error: %s" % e.reason.args[1]} 
   
+  def wikiCommand(self, cmd):
+    # parse out article title
+    replace = [";"]
+    for r in replace:
+      cmd = cmd.replace(r, "")
+    cmd = cmd.split(' ')
+    title = '%20'.join(cmd[1:])
+    try:
+      request = urllib2.Request("http://en.wikipedia.org/w/index.php?action=render&title="+title)
+      request.add_header("User-Agent", 'Gladomus/0.1')
+      raw = urllib2.urlopen(request)
+      soup = BeautifulSoup(raw)
+      # check if its a disambiguation article
+      if not soup.find('table', {'class':'infobox'}):
+        # disambiguation article
+        sections = soup.findAll('ul', recursive=False) # fuck it, just doing ul's for now
+        num = 1
+        res = ""
+        for section in sections:
+          lists = section.findAll('li', recursive=False)
+          for l in lists:
+            res = res + str(num)+'.'+''.join(l.findAll(text=True))+' '
+            num = num + 1
+      else:
+        summary = soup.find('p', recursive=False)
+        textSummary = summary.findAll(text=True)
+        res = ''.join(textSummary)
+    
+      return {'success':res}
+    except urllib2.HTTPError, e:
+      return {"error": "HTTP error: %d" % e.code}
+    except urllib2.URLError, e:
+      return {"error": "Network error: %s" % e.reason.args[1]} 
+
   def callCommand(self, cmd, fromNumber):
     originalCmd = cmd
-    cmd = re.sub("\s+", " ", cmd)
-    cmd = cmd.strip(" ")
+    #cmd = re.sub("\s+", " ", cmd)
+    #cmd = cmd.strip(" ")
     replace = ["-", "(", ")", ":", "."]
     for r in replace:
       cmd = cmd.replace(r, "")
@@ -125,8 +160,11 @@ class Commander:
     map d s:start e:end
     map p s:start e:end a:arrival/d:departure
     map w s:start e:end
+    wiki title
     whois x
     """
+    cmd = re.sub("\s+", " ", cmd)
+    cmd = cmd.strip(" ")
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
     if cmdHeader == "map":
@@ -151,6 +189,12 @@ class Commander:
       res = self.callCommand(cmd, fromNumber)
       if "error" in res:
         self.sendMsg(res["error"], fromNumber)
+    elif cmdHeader == 'wiki':
+      res = self.wikiCommand(cmd)
+      if "error" in res:
+        self.sendMsg(res["error"], fromNumber)
+      else:
+        self.sendMsg(res['success'], fromNumber)
 
   def sendMsg(self, msg, number):
     message = self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)

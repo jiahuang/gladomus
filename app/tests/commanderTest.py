@@ -6,6 +6,26 @@ class CommanderTest:
   def __init__(self):
     self.c = Commander()
   
+  def wikiTest(self):
+    print "=== start of WikiTest ===\n"
+    badCmds = ["wiki slkdfjslkdfj"]
+    for badCmd in badCmds:
+      res = self.c.wikiCommand(badCmd)
+      if "error" not in res:
+        # error out
+        testRes = "Broke on: "+badCmd+"\n Res:"+str(res)+'\n'
+        print testRes
+        
+    cmds = ['wiki apple', 'wiki   mad cow      ', 'wiki wiz', 'wiki Christopher']
+    for cmd in cmds:
+      res = self.c.wikiCommand(cmd)
+      if "error" in res:
+        # error out
+        testRes = "Broke on: "+cmd+"\n Res:"+str(res)+'\n'
+        print testRes
+        
+    print "=== end of WikiTest ===\n"
+  
   def mapTest(self):
     print "=== start of MapTest ===\n"
     # bad commands: these should all return errors
@@ -39,6 +59,7 @@ class CommanderTest:
 def main(name):
   tester = CommanderTest()
   tester.mapTest()
+  tester.wikiTest()
 
 if __name__ == '__main__':
   main(*sys.argv)
