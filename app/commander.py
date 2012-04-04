@@ -178,13 +178,7 @@ class Commander:
         for i in res["success"]:
           msg = msg + str(num)+". "+i["directions"]+i["distance"]+' '
           num = num +1
-        i = 0
-        while i < len(msg):
-          if i+140 <= len(msg):
-            self.sendMsg(msg[i:i+140], fromNumber)
-          else:
-            self.sendMsg(msg[i:], fromNumber)
-          i = i + 140
+        self.sendMsg(msg, fromNumber)
     elif cmdHeader == "call":
       res = self.callCommand(cmd, fromNumber)
       if "error" in res:
@@ -197,7 +191,14 @@ class Commander:
         self.sendMsg(res['success'], fromNumber)
 
   def sendMsg(self, msg, number):
-    message = self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
+    i = 0
+    while i < len(msg):
+      if i+160 <= len(msg):
+        self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:i+160])
+      else:
+          self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:])
+      i = i + 160
+    #message = self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
     log('text', number+':'+msg)
 
 
