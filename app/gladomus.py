@@ -18,6 +18,7 @@ import datetime, sys, json, time, uuid, subprocess
 from models import *
 from commander import Commander
 import twilio.twiml
+from logger import log
 
 ########################################################################
 # Configuration
@@ -59,15 +60,13 @@ def requests():
   # this request should only be accessed through twilio
   fromNumber = request.form.get('From', None)
   msg = request.form.get('Body', None).lower()
-  print "fromNumber: "+fromNumber+'\n'
-  print "msg: "+msg+'\n'
+  log('access', 'REQUEST: '+fromNumber+' '+msg)
+  
   currDate = datetime.datetime.utcnow()
-  # check db
   number = db.numbers.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
   
   com = Commander()
-  
   if not number or number['active'] >= currDate or len(number['requests']) <= 3:
     # add it to cmd queue and add it to numbers collection
     if not number:
@@ -78,11 +77,12 @@ def requests():
       number.save()
     else:
       db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
-    print "REACHED: db updated"
+    log('access', "REACHED: db updated")
     com.parseCommand(msg, fromNumber)	
   else:
     # they need to pay
     db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
+    log('access', "REACHED: Need to pay "+fromNumber)
     com.sendMsg("You have used up your Gladomus calls/texts. Please subscribe at www.gladomus.com", fromNumber)
   
   return json_res({'success': 'hit requests'})

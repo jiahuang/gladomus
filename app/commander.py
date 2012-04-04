@@ -172,7 +172,6 @@ class Commander:
       if "error" in res:
         self.sendMsg(res["error"], fromNumber)
       else:
-        #parse out messages into 140 chars and send
         msg = ""
         num = 1
         for i in res["success"]:
@@ -196,9 +195,8 @@ class Commander:
       if i+160 <= len(msg):
         self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:i+160])
       else:
-          self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:])
+        self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body = msg[i:])
       i = i + 160
-    #message = self.client.sms.messages.create(to=number, from_="+1"+TWILIO_NUM, body=msg)
     log('text', number+':'+msg)
 
 
