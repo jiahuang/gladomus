@@ -207,9 +207,7 @@ class Sender(Thread):
       else:
         CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:])
       i = i + 160
-      #sleep 2 seconds
+      #sleep 1.5 seconds
       if i < len(self.msg):
-        time.sleep(2)
+        time.sleep(1.5)
     log('text', self.number+':'+self.msg)
-
-
