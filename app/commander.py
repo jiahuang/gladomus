@@ -124,7 +124,7 @@ class Commander:
     except urllib2.URLError, e:
       return {"error": "Network error: %s" % e.reason.args[1]} 
   
-  def wikiCommand(self, cmd):
+  def wikiCommand(self, cmd, fromNumber):
     # parse out article title
     replace = [";"]
     for r in replace:
@@ -193,8 +193,7 @@ class Commander:
             while p.nextSibling and p.nextSibling.nextSibling and p.nextSibling.nextSibling.name == 'p':
               p = p.nextSibling.nextSibling
               res = res +' '+ ''.join(p.findAll(text=True))
-              
-      # TODO: CACHE RES
+      
       return {'success':res}
     except urllib2.HTTPError, e:
       return {"error": "HTTP error: %d" % e.code}
@@ -263,30 +262,49 @@ class Commander:
       if "error" in res:
         self.processMsg(res["error"], fromNumber)
     elif cmdHeader == 'wiki':
-      res = self.wikiCommand(cmd)
+      res = self.wikiCommand(cmd, fromNumber)
       if "error" in res:
         self.processMsg(res["error"], fromNumber)
       else:
         self.processMsg(res['success'], fromNumber)
   
-  def processMsg(self, msg, number):
-    Sender(msg, number).start()
+  def processMsg(self, msg, number, cache=True):
+    Sender(msg, number, cache).start()
     
 class Sender(Thread):
-  def __init__(self, msg, number):
+  def __init__(self, msg, number, cache):
     self.msg = msg
     self.number = number
+    self.moreText = '(txt "more" to cont)'
+    self.cache = cache
     Thread.__init__(self)
   
   def run(self):
     i = 0
-    while i < len(self.msg):
-      #if i+160 <= len(self.msg):
-      #  CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:i+160])
-      #else:
-      #  CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:])
-      i = i + 160
+    maxTexts = 4 # max number before delaying into more
+    
+    if self.cache:
+      # CACHE RES
+      cache = db.Cache()
+      cache.number = unicode(self.number)
+      cache.data = self.msg
+      cache.index = 160*maxTexts-len(self.moreText)
+      cache.time = datetime.datetime.utcnow()
+      cache.save()
+    
+    while i*160 < len(self.msg) and i<maxTexts:
+      if i+1 >= maxTexts:
+        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
+        print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
+      elif (i+1)*160 <= len(self.msg):
+        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160])
+         print self.msg[i*160:(i+1)*160]
+      else:
+        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:])
+        print self.msg[i*160:]
+      i = i + 1
       #sleep 1.5 seconds
       if i < len(self.msg):
         time.sleep(1.5)
+        
     log('text', self.number+':'+self.msg)
