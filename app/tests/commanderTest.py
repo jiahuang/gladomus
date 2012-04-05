@@ -8,7 +8,8 @@ class CommanderTest:
   
   def wikiTest(self):
     print "=== start of WikiTest ===\n"
-    badCmds = ["wiki slkdfjslkdfj"]
+    badCmds = ["wiki slkdfjslkdfj", 'wiki a:sldfksjdf', 'wiki s:3sdf', 
+    'wiki a:apple s:sdfes', 'wiki a:rusko s:name']
     for badCmd in badCmds:
       res = self.c.wikiCommand(badCmd)
       if "error" not in res:
@@ -16,16 +17,16 @@ class CommanderTest:
         testRes = "Broke on: "+badCmd+"\n Res:"+str(res)+'\n'
         print testRes
         
-    cmds = ['wiki apple', 'wiki   mad cow      ', 'wiki wiz', 'wiki Christopher']
+    cmds = ['wiki a:apple', 'wiki   a: mad cow      ', 
+    'wiki a:wiz', 'wiki a:Christopher', 'wiki a:wiz s:sdfsdf',
+    'wiki a:rabbit s:1', 'wiki a:bill gates s:2.6', 'wiki a:rusko']
     for cmd in cmds:
       res = self.c.wikiCommand(cmd)
       if "error" in res:
         # error out
         testRes = "Broke on: "+cmd+"\n Res:"+str(res)+'\n'
         print testRes
-        
-    print "=== end of WikiTest ===\n"
-  
+    
   def mapTest(self):
     print "=== start of MapTest ===\n"
     # bad commands: these should all return errors
@@ -57,14 +58,14 @@ class CommanderTest:
     print "=== end of MapTest ===\n"
 
   def parseTester(self):
-    cmds = ['wiki apple']#, 'wiki pear', 'map d s:4714 17th Ave NE, Seattle e:Microsoft Building 84, WA']
+    cmds = ['wiki apple', 'wiki pear', 'map d s:4714 17th Ave NE, Seattle e:Microsoft Building 84, WA']
     for cmd in cmds:
       self.c.parseCommand(cmd, '+19193971139')
 
 def main(name):
   tester = CommanderTest()
-  #tester.mapTest()
-  #tester.wikiTest()
+  tester.mapTest()
+  tester.wikiTest()
   tester.parseTester()
 
 if __name__ == '__main__':

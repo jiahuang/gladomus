@@ -6,10 +6,10 @@ $(document).ready(function() {
 </script>
 {% endblock %}
 {% block body %}
-	Escape from awkward situations
+	The Internet in Text Messages
 	<!-->series of images goes here <!-->
 	Try out 3 commands for free
-	Just $5/year for unlimited service
+	Just $2/month or $10/year for unlimited service.
 	
 	<div>
 		<div>
@@ -46,51 +46,53 @@ $(document).ready(function() {
           call x
         </td>
         <td>
-          Texting "call 5" will call your phone after 5 minutes.
+          call 5
         </td>
       </tr>
       <tr>
         <td>
-          Call to the number specified after n minutes. You must put "n" before the number you wish to call.
+          Driving directions from a starting location to an ending location 
         </td>
         <td>
-          call n# x
+          map d s:starting location e:ending location
         </td>
         <td>
-          Texting "call n1234567890 5" will call 1234567890 after 5 minutes. 
-        </td>
-      </tr>
-      <tr>
-        <td>
-          Texts a message to your phone after x minutes.
-        </td>
-        <td>
-          txt x msg
-        </td>
-        <td>
-          Texting "txt 3 hello from getouttahere" will text "hello from getouttahere" after 3 minutes.
+          map d s:400 Broad st, Seattle e:1402 East Galer Street, Seattle
         </td>
       </tr>
       <tr>
         <td>
-          Texts a message to the number specified after x minutes. 
+          Walking directions from a starting location to an ending location
         </td>
         <td>
-          txt n# x msg
+          map w s:starting location e:ending location
         </td>
         <td>
-          Texting "txt n1234567890 0 hello from getouttahere" will text "hello from getouttahere" to 1234567890 after 0 minutes (immediately).  
+          map w s:400 Broad st, Seattle e:1402 East Galer Street, Seattle
         </td>
-      </tr>
+      <tr>
       <tr>
         <td>
-          Texts a cat fact to your phone
+          Public transit directions from a starting location to an ending location at a certain departure or arrival time
         </td>
         <td>
-          catfact
+          map p s:starting location e:ending location d:departure time <br/>
+          map p s:starting location e:ending location a:arrival time
         </td>
         <td>
-          Texting "catfact" will text your phone a cat fact immediately. 
+          map w s:400 Broad st, Seattle e:1402 East Galer Street, Seattle d:10pm <br/>
+          map w s:400 Broad st, Seattle e:1402 East Galer Street, Seattle a:13:00 <br/>
+        </td>
+      <tr>
+      <tr>
+        <td>
+          Wikipedia summary on a particular article
+        </td>
+        <td>
+          wiki article title
+        </td>
+        <td>
+          wiki apples
         </td>
       <tr>
     </table>

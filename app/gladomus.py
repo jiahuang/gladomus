@@ -37,10 +37,6 @@ def json_res(obj):
 	# convert datetimes to miliseconds since epoch
 	dthandler = lambda obj: time.mktime(obj.timetuple())*1000 if isinstance(obj, datetime.datetime) else None
 	return Response(json.dumps(obj, default=dthandler), mimetype='application/json')
-
-def sendError(self, number, error):
-  message = self.client.sms.messages.create(to="+1"+number, from_="+1"+self.number, body=msg)
-  # TODO: log it
 		
 ########################################################################
 # Routes

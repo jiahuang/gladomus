@@ -12,6 +12,48 @@ from threading import Thread
 
 CLIENT = TwilioRestClient(TWILIO_SID, TWILIO_AUTH)
 
+def isIntOrFloat(s):
+  try:
+    int(s)
+  except ValueError:
+    try:
+      float(s)
+    except ValueError:
+      return False
+  return True
+
+def clean(s):
+  s = re.sub("\s+", " ", s)
+  s = s.strip(" ")
+  return s
+
+def parseDoubleCommand(a, b, cmd):
+  cmdLenA = len(a)
+  cmdLenB = len(b)
+  a = cmd.find(a)
+  b = cmd.find(b)
+  if a > 0 and b > 0:
+    # check which one comes first
+    if a < b: # a is first
+      a = cmd[a+cmdLenA:b] #+len to get rid of command
+      b = cmd[b+cmdLenB:]
+    else:
+      b = cmd[b+cmdLenB:a]
+      a = cmd[a+cmdLenA:]
+    return [a, b]
+  elif a > 0:
+    a = cmd[a+cmdLenA:]
+    return [a, '']
+  elif b > 0:
+    b = cmd[b+cmdLenB:]
+    return ['', b]
+
+def isProperCmd(cmdReqs, cmd):
+  for cmdReq in cmdReqs:
+    if cmd.find(cmdReq) < 0:
+      return False
+  return True
+  
 class Commander:
   def mapCommand(self, cmd):
     # parse out command into mode, start, and end
@@ -20,7 +62,9 @@ class Commander:
     regex = re.compile('map [wdp] ', re.IGNORECASE)
     
     if not re.match(regex, mode):
-      return {"error": "Map command must be followed by either w, d, or p and a space. ex:map p "}
+      return {"error": "Map command must be followed by either (w)alking, (d)riving, or (p)ublic transit and a space. ex:map d "}
+    elif not isProperCmd(['s:', 'e:'], cmd):
+      return {"error": "Map command must have both a (s:)tarting and (e:)nding location, ex:map d s:Seattle e:Portland"}
     else:
       mode = cmd[4]
       if mode == "p":
@@ -49,15 +93,8 @@ class Commander:
           time = cmd[timeIndex+2:maxIndex]
           cmd = cmd[:timeIndex]+cmd[maxIndex:]
     
-    start = cmd.find('s:')
-    end = cmd.find('e:')
-    # check which one comes first
-    if start < end: # start is first
-      start = cmd[start+2:end] #+2 to get rid of s:
-      end = cmd[end+2:]
-    else:
-      end = cmd[end+2:start]
-      start = cmd[start+2:]
+    [start, end] = parseDoubleCommand('s:', 'e:', cmd)
+
     # parse out bad things
     badThings = ['"', "'", '\\', ';']
     for bad in badThings:
@@ -92,15 +129,21 @@ class Commander:
     replace = [";"]
     for r in replace:
       cmd = cmd.replace(r, "")
-    cmd = cmd.split(' ')
-    title = '%20'.join(cmd[1:])
+    if not isProperCmd(['a:'], cmd):
+      return {"error": "Wiki command must have an (a:)rticle specified, ex:wiki a:rabbits"}
+    
+    [article, section] = parseDoubleCommand('a:', 's:', cmd)
+    article = clean(article)
+    article = article.replace(' ', '%20')
+    section = clean(section)
+    
     try:
-      request = urllib2.Request("http://en.wikipedia.org/w/index.php?action=render&title="+title)
+      request = urllib2.Request("http://en.wikipedia.org/w/index.php?action=render&title="+article)
       request.add_header("User-Agent", 'Gladomus/0.1')
       raw = urllib2.urlopen(request)
       soup = BeautifulSoup(raw)
       # check if its a disambiguation article
-      if not soup.find('table', {'class':'infobox'}):
+      if soup.find('a', {'title':'Help:Disambiguation'}):
         # disambiguation article
         sections = soup.findAll('ul', recursive=False) # fuck it, just doing ul's for now
         num = 1
@@ -111,10 +154,47 @@ class Commander:
             res = res + str(num)+'.'+''.join(l.findAll(text=True))+' '
             num = num + 1
       else:
-        summary = soup.find('p', recursive=False)
-        textSummary = summary.findAll(text=True)
-        res = ''.join(textSummary)
-    
+        # summary
+        if section == '':
+          # no section, just grab summary
+          summary = soup.find('p', recursive=False)
+          textSummary = summary.findAll(text=True)
+          res = ''.join(textSummary)
+        else:
+          # there is a section
+          if section == 'toc': #grab table of contents
+            tocDiv = soup.find('div', {'id':'toctitle'})
+            if tocDiv == None:
+              return {'error': 'The article is too short to have a table of contents. Try "wiki a:'+article+'" to get the summary'}
+            toc = tocDiv.nextSibling
+            toc = toc.findAll(text=True)
+            res = ''.join(toc)
+          else:
+            if isIntOrFloat(section):
+              # find by section number
+              section = soup.find(text=section).parent.parent['href'][1:]#cut off the '#'
+              header = soup.find('span', {'id':section})
+              if header == None:
+                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+            else:
+              headers = soup.findAll(text=re.compile(r'\A'+section, re.IGNORECASE))
+              if len(headers) == 0:
+                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+              # check to make sure all found headers are spans with class mw-headline
+              cleanedHeaders = []
+              for header in headers:
+                if header.parent.name == 'span':
+                  cleanedHeaders.append(header)
+              if len(cleanedHeaders) == 0:
+                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+              header = cleanedHeader[-1].parent
+            p = header.findNext('p')
+            res = ''.join(p.findAll(text=True))
+            while p.nextSibling and p.nextSibling.nextSibling and p.nextSibling.nextSibling.name == 'p':
+              p = p.nextSibling.nextSibling
+              res = res +' '+ ''.join(p.findAll(text=True))
+              
+      # TODO: CACHE RES
       return {'success':res}
     except urllib2.HTTPError, e:
       return {"error": "HTTP error: %d" % e.code}
@@ -164,8 +244,7 @@ class Commander:
     wiki title
     whois x
     """
-    cmd = re.sub("\s+", " ", cmd)
-    cmd = cmd.strip(" ")
+    cmd = clean(cmd)
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
     if cmdHeader == "map":
@@ -202,10 +281,10 @@ class Sender(Thread):
   def run(self):
     i = 0
     while i < len(self.msg):
-      if i+160 <= len(self.msg):
-        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:i+160])
-      else:
-        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:])
+      #if i+160 <= len(self.msg):
+      #  CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:i+160])
+      #else:
+      #  CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i:])
       i = i + 160
       #sleep 1.5 seconds
       if i < len(self.msg):

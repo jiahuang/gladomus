@@ -37,6 +37,18 @@ class Actions(Document):
   use_dot_notation = True 
 
 @connection.register
+class Cache(Document):
+  __collection__ = 'cache'
+  __database__ = DATABASE_GLAD
+  structure = {
+    'number' : unicode, 
+    'data' : unicode,
+    'index' : int, # index of data that user has been sent
+    'time' : datetime.datetime # time cached
+  }
+  use_dot_notation = True 
+
+@connection.register
 class ReqCmds(Document):
   __collection__ = 'reqCmds'
   __database__ = DATABASE_GLAD
