@@ -58,4 +58,7 @@ class ReqCmds(Document):
     'time' : datetime.datetime,
     'msg' : unicode
   }
+  indexes = [{ 
+    'fields':['number'], 
+  }]
   use_dot_notation = True 

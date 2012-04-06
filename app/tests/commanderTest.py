@@ -1,6 +1,8 @@
 import sys
 sys.path.append("../")
+from models import *
 from commander import Commander
+import time
 
 class CommanderTest:
   def __init__(self):
@@ -30,7 +32,7 @@ class CommanderTest:
   def mapTest(self):
     print "=== start of MapTest ===\n"
     # bad commands: these should all return errors
-    badCmds = ["Map s:4714 17th Ave NE, Seattle e:Microsoft Buildling 84", 
+    """badCmds = ["Map s:4714 17th Ave NE, Seattle e:Microsoft Buildling 84", 
     "Map ds:4714 17th Ave NE, Seattle e:Microsoft Buildling 84",
     "Map p s:4714 17th Ave NE, Seattle e:Microsoft Buildling 84", 
     "Map p s:4714 17th Ave NE, Seattle e:Microsoft Buildling 84 a:sdlkfjsdf",
@@ -49,8 +51,12 @@ class CommanderTest:
     "Map p e:Microsoft Buildling 84 d:10:40 s:4714 17th Ave NE, Seattle", 
     "Map p e:Microsoft Buildling 84 a:10:40AM s:4714 17th Ave NE, Seattle",
     "Map p e:Microsoft Buildling 84 s:4714 17th Ave NE, Seattle a:10:40"]
+    
+    """
+    cmds = ['map w s:4714 17th Ave NE, seattle e:wow bubble tea']
     for cmd in cmds:
       res = self.c.mapCommand(cmd)
+      print res
       if "error" in res:
         # error out
         testRes = "Broke on: "+cmd+"\n Res:"+str(res)+'\n'
@@ -62,11 +68,17 @@ class CommanderTest:
     for cmd in cmds:
       self.c.parseCommand(cmd, '+19193971139')
 
+  def moreTest(self):
+    self.c.parseCommand('wiki a:pear', '+19193971139')
+    time.sleep(1.5*4)
+    self.c.parseCommand('more', '+19193971139')
+
 def main(name):
   tester = CommanderTest()
-  #tester.mapTest()
+  tester.mapTest()
   #tester.wikiTest()
-  tester.parseTester()
+  #tester.parseTester()
+  #tester.moreTest()
 
 if __name__ == '__main__':
   main(*sys.argv)

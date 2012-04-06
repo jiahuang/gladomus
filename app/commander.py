@@ -11,6 +11,7 @@ import time
 from threading import Thread
 
 CLIENT = TwilioRestClient(TWILIO_SID, TWILIO_AUTH)
+MAX_TEXTS = 4 # max number before delaying into more
 
 def isIntOrFloat(s):
   try:
@@ -242,11 +243,14 @@ class Commander:
     map w s:start e:end
     wiki title
     whois x
+    more
     """
     cmd = clean(cmd)
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
-    if cmdHeader == "map":
+    if cmdHeader == 'more':
+      self.processMsg('', fromNumber, False)
+    elif cmdHeader == "map":
       res = self.mapCommand(cmd)
       if "error" in res:
         sendMsg(res["error"], fromNumber)
@@ -268,40 +272,54 @@ class Commander:
       else:
         self.processMsg(res['success'], fromNumber)
   
-  def processMsg(self, msg, number, cache=True):
-    Sender(msg, number, cache).start()
+  def processMsg(self, msg, number, isNewMsg=True, cache=True):
+    Sender(msg, number, isNewMsg, cache).start()
     
 class Sender(Thread):
-  def __init__(self, msg, number, cache):
+  def __init__(self, msg, number, isNewMsg, cache):
     self.msg = msg
     self.number = number
     self.moreText = '(txt "more" to cont)'
     self.cache = cache
+    self.isNewMsg = isNewMsg
     Thread.__init__(self)
   
   def run(self):
-    i = 0
-    maxTexts = 4 # max number before delaying into more
-    
     if self.cache:
       # CACHE RES
-      cache = db.Cache()
-      cache.number = unicode(self.number)
-      cache.data = self.msg
-      cache.index = 160*maxTexts-len(self.moreText)
-      cache.time = datetime.datetime.utcnow()
-      cache.save()
+      cacheNumber = db.cache.find_one({'number':self.number})
+      currDate = datetime.datetime.utcnow()
+      index = 160*MAX_TEXTS-len(self.moreText)
+      if cacheNumber and self.isNewMsg:
+        # update cache
+        db.cache.update({'number':self.number}, {'$set':{'data':self.msg, 'index':index, 'time':currDate}})
+      elif not self.isNewMsg:# old message, move cache index
+        self.msg = cacheNumber['data']
+        index = cacheNumber['index']
+        if (index > len(self.msg)):
+          return # break out
+        self.msg = self.msg[index:]
+        # move cache index to new place, send off message
+        db.cache.update({'number':self.number}, {'$set':{'index':max(len(self.msg), index+160*MAX_TEXTS)}})
+      else: # new cache for that number
+        cache = db.Cache()      
+        cache.number = unicode(self.number)
+        cache.data = self.msg
+        cache.index = index
+        cache.time = currDate
+        cache.save()
     
-    while i*160 < len(self.msg) and i<maxTexts:
-      if i+1 >= maxTexts:
-        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
-        print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
+    i = 0
+    while i*160 < len(self.msg) and i<MAX_TEXTS:
+      if i+1 >= MAX_TEXTS and len(self.msg) > (i+1)*160:
+        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
+        #print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
       elif (i+1)*160 <= len(self.msg):
-        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160])
-         print self.msg[i*160:(i+1)*160]
+        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160])
+        #print self.msg[i*160:(i+1)*160]
       else:
-        #CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:])
-        print self.msg[i*160:]
+        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:])
+        #print self.msg[i*160:]
       i = i + 1
       #sleep 1.5 seconds
       if i < len(self.msg):
