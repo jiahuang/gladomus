@@ -1,9 +1,7 @@
 import sys
 sys.path.append("../app/")
-from models *
+from models import *
 from twilio.rest import TwilioRestClient
-import datetime
-import logger.log
 
 class actionDaemon:
   def performCalls(self):

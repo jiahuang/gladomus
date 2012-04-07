@@ -59,25 +59,25 @@ def requests():
   log('access', 'REQUEST: '+fromNumber+' '+msg)
   
   currDate = datetime.datetime.utcnow()
-  number = db.numbers.find_one({'number': fromNumber})
+  user = db.users.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
   
   com = Commander()
   if not number or number['active'] >= currDate or len(number['requests']) <= 3:
     # add it to cmd queue and add it to numbers collection
     if not number:
-      number = db.Numbers()
-      number.number = fromNumber
-      number.active = currDate
-      number.requests = [req]
-      number.save()
+      user = db.Users()
+      user.number = fromNumber
+      user.active = currDate
+      user.requests = [req]
+      user.save()
     else:
-      db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
+      db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: db updated")
     com.parseCommand(msg, fromNumber)	
   else:
     # they need to pay
-    db.numbers.update({'number':fromNumber}, {'$push':{'requests':req}})
+    db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: Need to pay "+fromNumber)
     com.sendMsg("You have used up your Gladomus calls/texts. Please subscribe at www.gladomus.com", fromNumber)
   

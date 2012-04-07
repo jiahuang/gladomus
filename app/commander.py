@@ -9,6 +9,7 @@ from logger import log
 from BeautifulSoup import BeautifulSoup
 import time
 from threading import Thread
+from operator import itemgetter
 
 CLIENT = TwilioRestClient(TWILIO_SID, TWILIO_AUTH)
 MAX_TEXTS = 4 # max number before delaying into more
@@ -56,6 +57,9 @@ def isProperCmd(cmdReqs, cmd):
   return True
   
 class Commander:
+  def __init__(self, fromNumber):
+    self.num = fromNumber
+    
   def mapCommand(self, cmd):
     # parse out command into mode, start, and end
     mode = cmd[0:6]
@@ -125,7 +129,7 @@ class Commander:
     except urllib2.URLError, e:
       return {"error": "Network error: %s" % e.reason.args[1]} 
   
-  def wikiCommand(self, cmd, fromNumber):
+  def wikiCommand(self, cmd):
     # parse out article title
     replace = [";"]
     for r in replace:
@@ -201,7 +205,7 @@ class Commander:
     except urllib2.URLError, e:
       return {"error": "Network error: %s" % e.reason.args[1]} 
 
-  def callCommand(self, cmd, fromNumber):
+  def callCommand(self, cmd):
     originalCmd = cmd
     #cmd = re.sub("\s+", " ", cmd)
     #cmd = cmd.strip(" ")
@@ -213,14 +217,10 @@ class Commander:
     currDate = datetime.datetime.utcnow()
     if len(cmd) == 2:
       # call x
-      number = fromNumber
+      number = self.num
       minutes = cmd[1]
-    elif len(cmd) == 3:
-      # call #n x
-      number = cmd[1]
-      minutes = cmd[2]
     else:
-      return {"error": "Call command must be either 'call min' (call 5) or 'call number min' (call 0000000000 5)"}
+      return {"error": "Call command must be 'call min' (call 5)"}
       
     action = db.Actions()
     action.number = number
@@ -229,51 +229,132 @@ class Commander:
     action.original = originalCmd
     action.save()
     
-    return {'Success': "Call has been scheduled"}
+    return {'success': "Call has been scheduled"}
     
-  def parseCommand(self, cmd, fromNumber):
+  def parseCommand(self, cmd):
 		# parses command
     """ 
     call x
-    call #n x
-    txt x msg
-    txt #n x msg
     map d s:start e:end
     map p s:start e:end a:arrival/d:departure
     map w s:start e:end
-    wiki title
-    whois x
+    wiki a:article
+    wiki a:article s:toc
+    wiki a:article s:section
+    *whois x
+    *wifi
     more
+    help
+    s <- search for commands
     """
     cmd = clean(cmd)
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
     if cmdHeader == 'more':
-      self.processMsg('', fromNumber, False)
+      self.processMsg('', False)
     elif cmdHeader == "map":
       res = self.mapCommand(cmd)
       if "error" in res:
-        sendMsg(res["error"], fromNumber)
+        self.processMsg(res["error"])
       else:
         msg = ""
         num = 1
         for i in res["success"]:
           msg = msg + str(num)+". "+i["directions"]+i["distance"]+' '
           num = num +1
-        self.processMsg(msg, fromNumber)
+        self.processMsg(msg)
     elif cmdHeader == "call":
-      res = self.callCommand(cmd, fromNumber)
+      res = self.callCommand(cmd)
       if "error" in res:
-        self.processMsg(res["error"], fromNumber)
+        self.processMsg(res["error"])
     elif cmdHeader == 'wiki':
-      res = self.wikiCommand(cmd, fromNumber)
+      res = self.wikiCommand(cmd)
       if "error" in res:
-        self.processMsg(res["error"], fromNumber)
+        self.processMsg(res["error"])
       else:
-        self.processMsg(res['success'], fromNumber)
-  
-  def processMsg(self, msg, number, isNewMsg=True, cache=True):
-    Sender(msg, number, isNewMsg, cache).start()
+        self.processMsg(res['success'])
+    else:
+      res = self.performCustomCommand(cmd, cmdHeader)
+      if "error" in res:
+        self.processMsg(res["error"])
+      else:
+        self.processMsg(res['success'])
+      
+  def performCustomCommand(self, cmd, cmdHeader):
+    # look through custom commands
+    customCmds = db.Commands.find({'cmd':cmdHeader}, {'_id':1}) #only returns ids
+    user = db.Users.find_one({'number':self.num})
+    if len(customCmds) == 0:
+      # if no results, error out
+      return {'error':cmdHeader+' command not found. Go to www.gladomus.com/commands for a list of commands'} #TODO: add suggestions module?
+    elif len(customCmds) == 1:
+      # if only one custom command returns and user doesnt have that command on their list, add it
+      if customCmds[0]._id not in user.cmds:
+        user.cmds.append(cmd[0]._id)
+        user.save()
+      return self.customCommandHelper(customCmds[0], cmd)
+    # if more than one returns, check user's list
+    elif len(customCmds) > 1:
+      matchCmds = [uCmd for uCmd in user.cmds if uCmd in customCmds]
+      # if more than one appears error out
+      if len(matchCmds) > 1:
+        return {'error': cmdHeader+' has multiple custom commands. Please go to www.gladomus.com and select one'} #TODO: make it so you can select one from texting 
+      else:
+        return self.customCommandHelper(matchCmds[0], cmd)
+
+  def customCommandHelper(cmdId, userCmd):
+    cmd = db.Commands.find_one({'_id':cmdId})
+    # parse out userCmd according to switch operators
+    if len(cmd.switches) > 0:
+      # there are switches, parse them
+      switchLocs = [ for s in cmd.switches]
+      switchLocs = []
+      for s in cmd.switches:
+        if userCmd.find(s['switch']+'.' < 0:
+          return {'error':'Error:missing '+s['switch']+' switch. ex:'+cmd.example}
+        switchLocs.append({'s':s['switch']+'.', 'loc':userCmd.find(s['switch']+'.')})
+        
+      #sort by locs
+      switchLocs = sorted(switchLocs, key=itemgetter('loc'))
+      swiches = []
+      for i in xrange(len(switchLocs)-1):
+        s1 = switchLocs[i]
+        s2 = switchLocs[i+1]
+        switches.append({'s':s1['s'], 'data':userCmd[s['loc']+2:s2['loc']].replace(' ', '%20')})
+      # append final one
+      switches.append({'s':switchLocs[-1]['s'],'data':userCmd[switchLocs[-1]['loc']:].replace(' ', '%20')})
+
+      #put together url with switches
+      for s in switches:
+        url = cmd.url.replace(s['s'], s['data'])
+    else:
+      url = cmd.url
+
+    try:
+      request = urllib2.Request(url)
+      request.add_header("User-Agent", 'Gladomus/0.1')
+      raw = urllib2.urlopen(request)
+      soup = BeautifulSoup(raw)
+      # parse soup according to includes
+      msg = ''
+      count = 1
+      for i in cmd.includes:
+        found = soup.findAll(i.tag, {i.type:re.compile(r'\b%s\b'%i.value)}) # not sure if dot operators exist at this level
+        for f in found:
+          text = found.findAll(text=True)
+          if text.find(str(count)+'.') < 0:
+            msg = msg + str(count)+'.'+text+' '
+          else:
+            msg = msg + ' '+ str(text)
+        
+      return {'success':msg}
+    except urllib2.HTTPError, e:
+      return {"error": "HTTP error: %d" % e.code}
+    except urllib2.URLError, e:
+      return {"error": "Network error: %s" % e.reason.args[1]} 
+
+  def processMsg(self, msg, isNewMsg=True, cache=True):
+    Sender(msg, self.num, isNewMsg, cache).start()
     
 class Sender(Thread):
   def __init__(self, msg, number, isNewMsg, cache):
