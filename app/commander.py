@@ -6,7 +6,7 @@ import simplejson
 from bingMapParser import BingMapParser
 import re
 from logger import log
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 import time
 from threading import Thread
 from operator import itemgetter
@@ -274,62 +274,77 @@ class Commander:
       else:
         self.processMsg(res['success'])
     else:
-      res = self.performCustomCommand(cmd, cmdHeader)
+      res = self.performCustomCommand(cmd)
       if "error" in res:
         self.processMsg(res["error"])
       else:
         self.processMsg(res['success'])
       
-  def performCustomCommand(self, cmd, cmdHeader):
+  def performCustomCommand(self, cmd):
+    cmdHeader = cmd.split(' ')[0]
     # look through custom commands
     customCmds = db.Commands.find({'cmd':cmdHeader}, {'_id':1}) #only returns ids
     user = db.Users.find_one({'number':self.num})
-    if len(customCmds) == 0:
+
+    if customCmds.count() == 0:
       # if no results, error out
       return {'error':cmdHeader+' command not found. Go to www.gladomus.com/commands for a list of commands'} #TODO: add suggestions module?
-    elif len(customCmds) == 1:
+    elif customCmds.count() == 1:
       # if only one custom command returns and user doesnt have that command on their list, add it
       if customCmds[0]._id not in user.cmds:
         user.cmds.append(cmd[0]._id)
         user.save()
-      return self.customCommandHelper(customCmds[0], cmd)
+      return self.customCommandHelper(customCmds[0]['_id'], cmd)
     # if more than one returns, check user's list
-    elif len(customCmds) > 1:
-      matchCmds = [uCmd for uCmd in user.cmds if uCmd in customCmds]
+    elif customCmds.count() > 1:
+      matchCmds = [uCmd['_id'] for uCmd in user.cmds if uCmd in customCmds]
       # if more than one appears error out
       if len(matchCmds) > 1:
         return {'error': cmdHeader+' has multiple custom commands. Please go to www.gladomus.com and select one'} #TODO: make it so you can select one from texting 
       else:
         return self.customCommandHelper(matchCmds[0], cmd)
 
-  def customCommandHelper(cmdId, userCmd):
+  def customCommandHelper(self, cmdId, userCmd):
     cmd = db.Commands.find_one({'_id':cmdId})
     # parse out userCmd according to switch operators
     if len(cmd.switches) > 0:
       # there are switches, parse them
-      switchLocs = [ for s in cmd.switches]
+      #switchLocs = [s for s in cmd.switches]
       switchLocs = []
+      switches = []
       for s in cmd.switches:
-        if userCmd.find(s['switch']+'.' < 0:
+        if userCmd.find(s['switch']+'.') >= 0:
+          switchLocs.append({'s':s['switch']+'.', 'loc':userCmd.find(s['switch']+'.')})
+        elif  s['default'] != '':
+          switches.append({'s':s['switch']+'.', 'data':s['default']})
+        else:
           return {'error':'Error:missing '+s['switch']+' switch. ex:'+cmd.example}
-        switchLocs.append({'s':s['switch']+'.', 'loc':userCmd.find(s['switch']+'.')})
         
       #sort by locs
       switchLocs = sorted(switchLocs, key=itemgetter('loc'))
-      swiches = []
       for i in xrange(len(switchLocs)-1):
         s1 = switchLocs[i]
         s2 = switchLocs[i+1]
-        switches.append({'s':s1['s'], 'data':userCmd[s['loc']+2:s2['loc']].replace(' ', '%20')})
+        data = clean(userCmd[s1['loc']+2:s2['loc']]).replace(' ', '%20')
+        switches.append({'s':s1['s'], 'data':data})
       # append final one
-      switches.append({'s':switchLocs[-1]['s'],'data':userCmd[switchLocs[-1]['loc']:].replace(' ', '%20')})
+      if len(switchLocs) > 0:
+        data = clean(userCmd[switchLocs[-1]['loc']+2:]).replace(' ', '%20')
+        switches.append({'s':switchLocs[-1]['s'],'data':data})
 
+      url = cmd.url
       #put together url with switches
       for s in switches:
-        url = cmd.url.replace(s['s'], s['data'])
+        newUrl = url.replace('{'+s['s'][:-1]+'}', s['data'])
+        if newUrl == url:
+          # something went wrong. a command didnt get replaced
+          return {'error':"Error:couldn't find switch"+s['s']+""}
+        else:
+          url = newUrl
     else:
       url = cmd.url
 
+    print url
     try:
       request = urllib2.Request(url)
       request.add_header("User-Agent", 'Gladomus/0.1')
@@ -339,13 +354,19 @@ class Commander:
       msg = ''
       count = 1
       for i in cmd.includes:
-        found = soup.findAll(i.tag, {i.type:re.compile(r'\b%s\b'%i.value)}) # not sure if dot operators exist at this level
+        # put together tag matches dict
+        matchDict = {}
+        for match in i['matches']:
+          matchDict[match['type']] = re.compile(r'\b%s\b'%match['value'])
+        found = soup.findAll(i['tag'], matchDict)
         for f in found:
-          text = found.findAll(text=True)
-          if text.find(str(count)+'.') < 0:
-            msg = msg + str(count)+'.'+text+' '
+          text = f.findAll(text=True)
+          text = ''.join(text)
+          if cmd.enumerate:
+            msg = msg + ' '+str(count)+'.'+ str(text.encode("utf-8"))
+            count = count + 1
           else:
-            msg = msg + ' '+ str(text)
+            msg = msg + ' '+ str(text.encode("utf-8"))
         
       return {'success':msg}
     except urllib2.HTTPError, e:

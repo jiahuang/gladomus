@@ -81,6 +81,7 @@ class Commands(Document): #user generated commands
     'url': unicode,
     'description':unicode,
     'example':unicode,
+    'enumerate': bool, # if true enumerates results
     'switches' : [{
       'switch':unicode,
       'default':unicode,
@@ -92,14 +93,13 @@ class Commands(Document): #user generated commands
         'value':unicode, # value of class/id
         }]
       }],
-    # not doing excludes for now
-    #'exclude' : [{
-    #  'tag':unicode, #div, span, p, etc
-    #  'matches': {[
-    #    'type':unicode, #class, id, href, etc
-    #    'value':unicode, # value of class/id
-    #    ]}
-    #  }],
+    'excludes' : [{
+      'tag':unicode, #div, span, p, etc
+      'matches': [{
+        'type':unicode, #class, id, href, etc
+        'value':unicode, # value of class/id
+        }]
+      }],
     'owner' : pymongo.objectid.ObjectId,
     'dateUpdated': datetime.datetime,
   }
@@ -107,11 +107,10 @@ class Commands(Document): #user generated commands
     'fields':['cmd'], 
   }]
   default_values = {
-    'switches': [{
-      'switch': '',
-      'default': '',
-    }],
+    'switches': [],
     'includes':[],
+    'excludes':[],
+    'enumerate': False,
     'dateUpdated':datetime.datetime.utcnow()
   }
   use_dot_notation = True 
