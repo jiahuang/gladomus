@@ -62,7 +62,6 @@ def requests():
   user = db.users.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
   
-  com = Commander()
   if not number or number['active'] >= currDate or len(number['requests']) <= 3:
     # add it to cmd queue and add it to numbers collection
     if not number:
@@ -74,7 +73,9 @@ def requests():
     else:
       db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: db updated")
-    com.parseCommand(msg, fromNumber)	
+    Commander(cmd, fromNumber).start()
+    #com.parseCommand(msg, fromNumber)
+    #Sender(msg, fromNumber, isNewMsg, cache).start()
   else:
     # they need to pay
     db.users.update({'number':fromNumber}, {'$push':{'requests':req}})

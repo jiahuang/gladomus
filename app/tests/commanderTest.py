@@ -81,6 +81,7 @@ class CommanderTest:
     for badCmd in badCmds:
       res = self.c.performCustomCommand(badCmd)
       self.printResults(badCmd, res, False, True)
+
     cmds = ['woot', 'reddit', 'hn', 'g s.test', 'g s.jialiya huang', 'gh p.hireAnOliner u.jiahuang',
     'gh u.jiahuang p.hireAnOliner', 'gh']
     for cmd in cmds:

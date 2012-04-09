@@ -56,9 +56,12 @@ def isProperCmd(cmdReqs, cmd):
       return False
   return True
   
-class Commander:
-  def __init__(self, fromNumber):
+class Commander(Thread):
+  def __init__(self, fromNumber, cmd):
     self.num = fromNumber
+    self.moreText = '(txt "more" to cont)'
+    self.cmd = cmd
+    Thread.__init__(self)
     
   def mapCommand(self, cmd):
     # parse out command into mode, start, and end
@@ -217,13 +220,12 @@ class Commander:
     currDate = datetime.datetime.utcnow()
     if len(cmd) == 2:
       # call x
-      number = self.num
       minutes = cmd[1]
     else:
       return {"error": "Call command must be 'call min' (call 5)"}
       
     action = db.Actions()
-    action.number = number
+    action.number = self.num
     action.command = cmd[0]
     action.time = currDate + datetime.timedelta(minuets=minutes)
     action.original = originalCmd
@@ -231,7 +233,7 @@ class Commander:
     
     return {'success': "Call has been scheduled"}
     
-  def parseCommand(self, cmd):
+  def run(self):
 		# parses command
     """ 
     call x
@@ -247,7 +249,7 @@ class Commander:
     help
     s <- search for commands
     """
-    cmd = clean(cmd)
+    cmd = clean(self.cmd)
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
     if cmdHeader == 'more':
@@ -353,20 +355,20 @@ class Commander:
       # parse soup according to includes
       msg = ''
       count = 1
-      for i in cmd.includes:
-        # put together tag matches dict
-        matchDict = {}
-        for match in i['matches']:
-          matchDict[match['type']] = re.compile(r'\b%s\b'%match['value'])
-        found = soup.findAll(i['tag'], matchDict)
-        for f in found:
-          text = f.findAll(text=True)
-          text = ''.join(text)
-          if cmd.enumerate:
-            msg = msg + ' '+str(count)+'.'+ str(text.encode("utf-8"))
-            count = count + 1
-          else:
-            msg = msg + ' '+ str(text.encode("utf-8"))
+      includeText = self.findHtmlElements(soup, cmd.includes)
+      excludeText = self.findHtmlElements(soup, cmd.excludes)
+
+      if len(excludeText) > 0:
+        text = [included for included in includeText if included not in excludeText]
+      else:
+        text = includeText
+      
+      if cmd.enumerate:
+        for t in text:
+          msg = msg + ' '+str(count)+'.'+ str(t.encode("utf-8"))
+          count = count + 1
+      else:
+        msg = ''.join(text)
         
       return {'success':msg}
     except urllib2.HTTPError, e:
@@ -374,57 +376,59 @@ class Commander:
     except urllib2.URLError, e:
       return {"error": "Network error: %s" % e.reason.args[1]} 
 
+  def findHtmlElements(self, soup, elementsToFind):
+    foundText = []
+    for i in elementsToFind:
+      # put together tag matches dict
+      matchDict = {}
+      for match in i['matches']:
+        matchDict[match['type']] = re.compile(r'\b%s\b'%match['value'])
+      found = soup.findAll(i['tag'], matchDict)
+
+      for f in found:
+        foundText = foundText + f.findAll(text=True)
+    return foundText
+
   def processMsg(self, msg, isNewMsg=True, cache=True):
-    Sender(msg, self.num, isNewMsg, cache).start()
-    
-class Sender(Thread):
-  def __init__(self, msg, number, isNewMsg, cache):
-    self.msg = msg
-    self.number = number
-    self.moreText = '(txt "more" to cont)'
-    self.cache = cache
-    self.isNewMsg = isNewMsg
-    Thread.__init__(self)
-  
-  def run(self):
-    if self.cache:
+    if cache:
       # CACHE RES
-      cacheNumber = db.cache.find_one({'number':self.number})
+      cacheNumber = db.cache.find_one({'number':self.num})
       currDate = datetime.datetime.utcnow()
       index = 160*MAX_TEXTS-len(self.moreText)
-      if cacheNumber and self.isNewMsg:
+      if cacheNumber and isNewMsg:
         # update cache
-        db.cache.update({'number':self.number}, {'$set':{'data':self.msg, 'index':index, 'time':currDate}})
-      elif not self.isNewMsg:# old message, move cache index
-        self.msg = cacheNumber['data']
+        db.cache.update({'number':self.num}, {'$set':{'data':msg, 'index':index, 'time':currDate}})
+      elif not isNewMsg:# old message, move cache index
+        msg = cacheNumber['data']
         index = cacheNumber['index']
-        if (index > len(self.msg)):
+        if (index > len(msg)):
           return # break out
-        self.msg = self.msg[index:]
+        msg = msg[index:]
         # move cache index to new place, send off message
-        db.cache.update({'number':self.number}, {'$set':{'index':max(len(self.msg), index+160*MAX_TEXTS)}})
+        db.cache.update({'number':self.num}, {'$set':{'index':max(len(msg), index+160*MAX_TEXTS)}})
       else: # new cache for that number
         cache = db.Cache()      
-        cache.number = unicode(self.number)
-        cache.data = self.msg
+        cache.number = unicode(self.num)
+        cache.data = msg
         cache.index = index
         cache.time = currDate
         cache.save()
     
     i = 0
-    while i*160 < len(self.msg) and i<MAX_TEXTS:
-      if i+1 >= MAX_TEXTS and len(self.msg) > (i+1)*160:
-        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
+    while i*160 < len(msg) and i<MAX_TEXTS:
+      if i+1 >= MAX_TEXTS and len(msg) > (i+1)*160:
+        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
         #print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
-      elif (i+1)*160 <= len(self.msg):
-        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:(i+1)*160])
+      elif (i+1)*160 <= len(msg):
+        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:(i+1)*160])
         #print self.msg[i*160:(i+1)*160]
       else:
-        CLIENT.sms.messages.create(to=self.number, from_="+1"+TWILIO_NUM, body = self.msg[i*160:])
+        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:])
         #print self.msg[i*160:]
       i = i + 1
       #sleep 1.5 seconds
-      if i < len(self.msg):
+      if i < len(msg):
         time.sleep(1.5)
         
-    log('text', self.number+':'+self.msg)
+    log('text', self.num+':'.msg)
+  

@@ -40,10 +40,11 @@ def populateCustom():
   {'tag':u'article', 'matches':[{'type':u'class', 'value':u'entry-content'}]}],
   ]
 
-  excludes = [[{'tag':u'td','matches':[{'type':u'align', 'value':u'right'}]}], [],
+  excludes = [[{'tag':u'td','matches':[{'type':u'align', 'value':u'right'}]},
+  {'tag':u'span','matches':[{'type':u'class', 'value':u'comhead'}]}], [],
   [], [], []]
 
-  enumerates = [False, False, True, False, False]
+  enumerates = [True, False, True, False, False]
   # find the owner
   owner = db.Users.find_one({'number':'+19193971139'})
   for i in xrange(len(cmds)):
