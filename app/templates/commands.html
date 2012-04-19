@@ -1,0 +1,184 @@
+{%extends "layout.html" %}
+{% block head%}
+<script type="text/javascript">
+var PAGE, SORTBY, ORDER, SEARCH, ADDDIV = false;
+$(document).ready(function() {
+  function CommandTable(Anchor, Table){
+    var loaderRow = $('<tr>').append($('<td>').attr('colspan', '7').append($('<div>').attr('class', 'ajaxlLoader')));
+    var endRow = $('<tr>').append($('<td>').attr('colspan', '7').append($('<div>').attr('class', 'endRow'))).html('No more commands to show');
+    var THIS = this;
+    
+    this.grabCommands = function(page, sortBy, order, search){
+      if(page == PAGE && sortBy == SORTBY && order == ORDER && search==SEARCH) return
+      PAGE = page;
+      SORTBY = sortBy;
+      ORDER = order;
+      SEARCH = search;
+      
+      if (PAGE == 1){clearRows();}
+      showLoading();
+
+      $.post('/commandsAjax',
+        {page:PAGE, sortBy:SORTBY, order:ORDER, search:SEARCH}, 
+        function(data){
+          console.log(data);
+          hideLoading();
+          if (data){ insertRows(data);}
+          else{ Table.append(endRow);}
+        },
+        'json'
+        )
+    }
+
+    showLoading = function(){
+      // show a loading icon
+      Table.append(loaderRow);
+    }
+
+    hideLoading = function(){
+      loaderRow.remove();
+    }
+
+    clearRows = function(){
+      // clear all the rows
+      Table.empty();
+    }
+    
+    insertRow = function(item){
+      console.log(item);
+      console.log(item['id'])
+      var addDiv = $('<div>').attr('class', 'notificationNumber').attr('url', '/createCommands/add/'+item['id']).text('add');
+      var editDiv = $('<div>').attr('class', 'notificationNumber').attr('url', '/createCommands/edit/'+item['id']).text('edit');
+      var switches = $('<table>')
+      $.each(item['switches'], function(){
+        switches.append($('<tr>')
+          .append($('<td>')
+            .append($('<div>').attr('class', 'notificationNumber').text(this['switch'])) /*todo: add default on hover*/
+          )
+          .append($('<td>')
+            .append($('<div>').attr('class', 'notificationNumber').text(this['description']))
+          ));
+      });
+      var cmd = $('<div>').attr('class', 'notificationNumber').text(item['cmd']); /*todo: add gobal tag*/
+      var descp = $('<div>').attr('class', 'notificationNumber').text(item['description']);
+      var example = $('<div>').attr('class', 'notificationNumber').text(item['example']);
+
+      var offset = new Date().getTimezoneOffset()*60*1000*-1;
+      var date = new Date(item['dateUpdated'] + offset);
+      var dateUpdated = $('<div>').attr('class', 'notificationNumber').text(date.getMonth()+"/"+date.getDate()+" "+date.getHours()+":"+date.getMinutes());
+      
+      var tr = $('<tr>')
+        .append($('<td>')
+          .append(cmd)
+        ).append($('<td>')
+          .append(descp)
+        ).append($('<td>')
+          .append(example)
+        ).append($('<td>')
+          .append(switches)
+        ).append($('<td>')
+          .append(dateUpdated)
+        )//.attr('id', id)
+        .attr('class', 'urlRow');
+      //rowId++;
+
+      if(ADDDIV){
+        tr.prepend(editDiv);
+        tr.prepend(addDiv);
+      }
+      Table.append(tr);
+    }
+
+    insertRows = function(items){
+      console.log(items);
+      $.each(items, function(){
+        console.log(this);
+        insertRow(this);
+      });
+    }
+
+
+    Anchor.scroll(function(){
+          console.log(Anchor.offset().top + ' ' + Anchor.scrollTop());
+          // within 50 pixels of the end, lets load some more
+          if(Anchor.offset().top < Anchor.scrollTop()) {
+            THIS.grabCommands(PAGE+1, SORTBY, ORDER, SEARCH);
+            console.log(Table.scrollTop());
+          }
+      });
+  }
+
+  var cmdTable = new CommandTable($('#cmdTableAnchor'), $('#cmdTableInner'));
+  /* populate table*/
+  $('#addAsc').click(function(){cmdTable.grabCommands(1, 0, 1, '');});
+  $('#addDsc').click(function(){cmdTable.grabCommands(1, 0, 0, '');});
+  $('#cmdAsc').click(function(){cmdTable.grabCommands(1, 1, 1, '');});
+  $('#cmdDsc').click(function(){cmdTable.grabCommands(1, 1, 0, '');});
+  $('#dateAsc').click(function(){cmdTable.grabCommands(1, 2, 1, '');});
+  $('#dateDsc').click(function(){cmdTable.grabCommands(1, 2, 0, '');});
+  cmdTable.grabCommands(1, 0, -1, '');
+}); </script>
+{% endblock %}
+{% block body %}
+<div id="cmdDiv">
+  <table id="cmdTable" style="width:800px; margin:30px auto; display:block;" border="0" cellspacing="0">
+			<tr id="headerRow" style="background-color:#CEE5F5; height:30px;">
+        {% if session.logged_in %}
+        <td width="50px">
+          <table>
+            <tr>
+              <td><table>
+                <tr><td><div id="addAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
+                <tr><td><div id="addDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+              </table>
+              </td>
+              <td>Added</td>
+            </tr>
+          </table>
+        <td width="50px"></td>
+        <script>ADDDIV = true;</script>
+        {%endif%}
+        <td width="80px">
+          <table>
+            <tr>
+              <td><table>
+                <tr><td><div id="cmdAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
+                <tr><td><div id="cmdDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+              </table>
+              </td>
+              <td><div class="header" style="width:13px; margin-left:auto; margin-right:auto;">Command</div></td>
+            </tr>
+          </table>
+        </td>
+				<td width="200px"><div class="header" style="width:25px; margin-left:auto; margin-right:auto;">Description</div> </td>
+				<td width="150px"><div class="header" style="width:55px; margin-left:auto; margin-right:auto;">Example</div> </td>
+        <td width="100px"><div class="header" style="width:55px; margin-left:auto; margin-right:auto;">Switches</div> </td>
+        <td width="100px">
+          <table>
+            <tr>
+              <td><table>
+                <tr><td><div id="dateAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
+                <tr><td><div id="dateDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+              </table>
+              </td>
+              <td><div class="header" style="width:13px; margin-left:auto; margin-right:auto;">Date Updated</div></td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        {% if session.logged_in %}
+        <td colspan='7'>
+        {%else%}
+        <td colspan='5'>
+        {%endif%}
+          <div id="cmdTableAnchor" style="width:660px; height:550px; overflow-y:scroll;">
+          <table id="cmdTableInner">
+          </table>
+          </div>
+        </td>
+      </tr>
+		</table>
+</div>
+	
+{% endblock %}

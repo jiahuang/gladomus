@@ -1,0 +1,144 @@
+/*
+ * Gladomus
+ * 2012
+ */
+
+.orange {color:#E53F1E;}
+.dblue {color:#1B1657;}
+.lblue {color:#4C7EAD;}
+.mblue{color:#2D4C9C;}
+
+.clear{clear:both;}
+
+html { height: 100% }
+
+body {
+	font-family: helvetica, arial, sans-serif;
+	margin: 0px;
+  padding: 0px;
+  height:100%;
+}
+
+#wrap{
+	width:100%;
+	min-height:100%;
+}
+
+#bodyBlock{
+	margin-left:auto;
+	margin-right:auto;
+	width: 900px;
+  background: #E1CEED; /* #EEE1F7*/
+}
+
+
+/* HEADER AND NAV */
+#header {
+	margin: 0;
+	background: #54006D; /*#2A4780;*/ /*rgb(50,50,50);*/
+  background: -webkit-gradient(linear, left top, left bottom, from(#54006D), to(#39004A)); /* for webkit browsers */
+	background: -moz-linear-gradient(top, #54006D, #39004A); /* for firefox 3.6+ */ 
+	color: white;
+	overflow: hidden;
+	padding-bottom: 5px;
+}
+
+h1 {
+	margin-bottom: 5px;
+	margin-top: 0px;
+}
+
+h1 a {
+	font-size: 50px;
+	margin-top: -10px;
+	font-family: 'Jockey One', sans-serif;
+	color: white;
+	text-decoration: none;
+}
+
+h1 a:hover {
+	color: white;
+}
+
+h1 a:active {
+	color: white;
+}
+
+#header .centered {
+	text-align: left;
+}
+
+.centered {
+	width: 900px;
+	margin: auto;
+	padding: 0;
+	text-align: center;
+}
+
+#header ul {
+	margin: 0;
+	padding: 0;
+}
+
+#header ul li {
+	list-style: none;
+	display: inline;
+	margin: .5em;
+}
+
+#header li a {
+	color: inherit;
+	text-decoration: none;
+}
+
+#header li:hover {
+	color: #FF0700;
+}
+
+.ajaxlLoader{
+  width:35px;
+  height:35px;
+  background:url(../site_imgs/ajax-loader.gif);
+}
+
+.deleteButton{
+	height: 20px;
+	width: 20px;
+	background: url(../site_imgs/close-button.png) no-repeat center center;
+	position: relative;
+  display:none;
+	opacity: 80;
+}
+
+.addButton{
+	height: 20px;
+	width: 20px;
+	background: url(../site_imgs/add-button.png) no-repeat center center;
+	position: relative;
+	opacity: 80;
+  cursor:pointer;
+}
+
+#navlinks {
+	background: #5E5E5E;
+	background: -webkit-gradient(linear, left top, left bottom, from(#5E5E5E), to(#000)); /* for webkit browsers */
+	background: -moz-linear-gradient(top, #5E5E5E, #000); /* for firefox 3.6+ */ 
+	overflow: hidden;
+	display: inline-block;
+	float: right;
+	margin: 0;
+	padding: 10px;
+	text-transform: lowercase;
+	border-radius: 0 0 10px 10px;
+	-moz-border-radius: 0 0 10px 10px;
+	-webkit-border-radius: 0 0 10px 10px;
+}
+#footer {
+	position:relative;
+	width: 100%;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top: -40px;
+	text-align: center;
+	font-size: 12px;
+}

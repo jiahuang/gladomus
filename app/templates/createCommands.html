@@ -1,0 +1,151 @@
+{%extends "layout.html" %}
+{% block head%}
+<script type="text/javascript">
+$(document).ready(function() {
+  function createTableLabel(tr, label){
+    tr.append($('<td>').append($('<div>').attr('class', 'createLabel').html(label)));
+    tr.append($('<td>').append($('<input>').attr('type', 'text').attr('class', 'createInput')));
+    return tr;
+  }
+
+  $('.hoverDelete').live("mouseenter mouseleave", function() {
+    var delButton = $(this).find($('.deleteButton')).first();
+    delButton.toggle();
+  });
+
+  $('.deleteButton').live('click', function(){
+    // remove entire row
+    $(this).parent().parent().remove();
+  });
+    
+  $('.addButton').live('click', function(){
+    // insert new row to parent table
+    var type = $(this).attr('type')
+    var tr = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addButton').attr('type', $(this).attr('type'))));
+    var parentTbl = $(this).parent().parent().parent().parent();
+    console.log(type);
+    if (type == "switch"){
+      tr = createTableLabel(tr, 'Switch');
+      tr = createTableLabel(tr, 'Description');
+      tr = createTableLabel(tr, 'Default');
+      parentTbl.append(tr);
+    }
+    else if (type == 'inner'){
+      tr = createTableLabel(tr, 'Attribute');
+      tr = createTableLabel(tr, 'Value');
+      parentTbl.append(tr);
+    }
+    else if (type=='outer'){
+      tr = createTableLabel(tr, 'Tag');
+      var childTbl = $('<table>');
+      var childRow = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addButton').attr('type', 'inner')));;
+      childRow = createTableLabel(childRow, 'Attribute');
+      childRow = createTableLabel(childRow, 'Value');
+      childTbl.append(childRow);
+      tr.append($('<td>').append(childTbl));
+      parentTbl.append(tr);
+    }
+    
+    $(this).parent().append($('<div>').attr('class', 'deleteButton'));
+    $(this).parent().parent().attr('class', 'hoverDelete'); // parent row 
+    // remove self
+    $(this).remove();
+  });
+
+  $('#submit').click(function(){
+    // try sending a hash
+  });
+});
+</script>
+{% endblock %}
+{% block body %}
+Unsure of how to create a command? <input id="tutButton" type="button" value="Show Tutorial"/>
+<div id="tutorial">
+</div>
+<div id="commandDiv">
+  <table>
+    <tr>
+      <td><div class="createLabel">Command</div></td>
+      <td><input type="text" id="cmdInput" class="createInput"/></td>
+    </tr>
+    <tr>
+      <td><div class="createLabel">Url</div></td>
+      <td><input type="text" id="urlInput" class="createInput"/></td>
+    </tr>
+    <tr>
+      <td><div class="createLabel">Switches</div></td>
+      <td>
+        <table id="switchesTbl">
+          <tr>
+            <td><div class="addButton" type="switch"></div></td>
+            <td><div class="createLabel">Switch</div></td>
+            <td><input type="text" class="createInput" switchType="switch"/></td>
+            <td><div class="createLabel">Description</div></td>
+            <td><input type="text" class="createInput" switchType="description"/></td>
+            <td><div class="createLabel">Default</div></td>
+            <td><input type="text" class="createInput" switchType="default"/></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="createLabel">Includes</div></td>
+      <td>
+        <table id="includesTbl">
+          <tr>
+            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="createLabel">Tag</div></td>
+            <td><input type="text" class="createInput" includeType="tag"/></td>
+            <td>
+              <table id="includesTblInner">
+                <tr>
+                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="createLabel">Attribute</div></td>
+                <td><input type="text" class="createInput tagInner" includeType="attribute"/></td>
+                <td><div class="createLabel">Value</div></td>
+                <td><input type="text" class="createInput tagInner" includeType="value"/></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="createLabel">Excludes</div></td>
+      <td>
+        <table id="excludesTbl">
+          <tr>
+            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="createLabel">Tag</div></td>
+            <td><input type="text" class="createInput" excludeType="tag"/></td>
+            <td>
+              <table id="excludesTblInner">
+                <tr>
+                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="createLabel">Attribute</div></td>
+                <td><input type="text" class="createInput" excludeType="attribute"/></td>
+                <td><div class="createLabel">Value</div></td>
+                <td><input type="text" class="createInput" excludeType="value"/></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="createLabel">Description</div></td>
+    </tr>
+    <tr>
+      <td><textarea id="descriptionInput"></textarea></td>
+    </tr>
+  </table>
+  <div class="header">Test the command</div>
+  <input type="text" id="testCmd"/>
+  <input type="button" value="Test"/>
+  <textarea id="testOutput" ></textarea>
+
+  <input type="button" id="submit" value="Save Command"/>
+</div>
+{% endblock %}
