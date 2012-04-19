@@ -10,14 +10,37 @@ def makeUser():
   req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
   user.requests = [req]
   user.save()
-  
+      
 def populateGlobals():
   # populate global commands table
-  cmds = ['map', 'wiki', 'more', 's', 'help', 'call']
-  for cmd in cmds:
-    glb = db.GlobalCommands()
-    glb.cmd = unicode(cmd)
-    glb.save()
+  cmds = ['mapw', 'mapd', 'mapp', 'wiki', 'more', 'call', 'newpw', 'signup']
+  descrip = ['Gives walking directions', 'Gives driving directions', 'Gives public transit directions at a certain arrival or departure time',
+  'Returns wikipedia information on particular articles',
+  'If any results are more than 4 texts long, the more command sends the next part of the result',
+  'Calls your phone in x minutes', 'Resets your password', 'Signs you up for Gladomus']
+  switches = [[{'switch':u's', 'default': u'','description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'}],
+  [{'switch':u's', 'default':u'', 'description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'}],
+  [{'switch':u's', 'default':u'', 'description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'},
+  {'switch':u'a', 'default':u'', 'description':u'arrival time. (1:00PM, 13:00)'}, {'switch':u'd', 'default':u'', 'description':u'departure time. (1:00PM, 13:00)'}], 
+  [{'switch':u'a', 'default':u'', 'description':u'article'},
+  {'switch':u's', 'default':u'summary', 'description':u'section of the article. Can specify "toc" to get the table of contents. Can be the section number in the table of contents or the heading. '}],
+  [], [], [], []]
+  examples = ['map w s.Microsoft Building 84, WA e.Microsoft Building 26, WA',
+  'map d s.Microsoft Building 84, WA e.Microsoft Building 26, WA', 'map p s.Microsoft Building 84, WA e.400 Broad St. Seattle, WA d.4:00pm',
+  'wiki a.rabbits, wiki a.rabbits s.toc, wiki a.rabbits s.10.1, wiki a.rabbits s.habitat and range',
+  'more', 'call 5', 'newpw', 'signup']
+  
+  owner = db.Users.find_one({'number':'+19193971139'})
+  for i in xrange(len(cmds)):
+    custom = db.Commands()
+    custom.cmd = unicode(cmds[i])
+    custom.description = unicode(descrip[i])
+    custom.isGlobal = True
+    custom.owner = owner._id
+    custom.switches = switches[i]
+    custom.example = unicode(examples[i])
+    custom._keywords = populateKeywords([switches[i], descrip[i], cmds[i], examples[i]])
+    custom.save()
 
 def populateCustom():
   # populate custom commands table
@@ -28,8 +51,8 @@ def populateCustom():
   descrip = [u'returns headlines of hackernews', u"woot's daily deal", 
   u'front page headlines of reddit', u'results from google search', u'readme from github project']
   examples = [u'hn', u'woot', u'reddit', u'g s.apples', u'gh u.twitter p.bootstrap']
-  switches = [[], [], [], [{'switch':u's', 'default':u''}],
-  [{'switch':u'u', 'default':u'twitter'}, {'switch':u'p', 'default':u'bootstrap'}]]
+  switches = [[], [], [], [{'switch':u's', 'default':u'', 'description':u'search query'}],
+  [{'switch':u'u', 'default':u'twitter', 'description':u'github user'}, {'switch':u'p', 'default':u'bootstrap', 'description':u'project name'}]]
 
   includes = [[{'tag':u'td','matches':[{'type':u'class', 'value':u'title'}]}],
   [{'tag':u'h2', 'matches':[{'type':u'class', 'value':u'fn'}]},
@@ -58,14 +81,15 @@ def populateCustom():
     custom.url = urls[i]
     custom.enumerate = enumerates[i]
     custom.example = examples[i]
+    custom._keywords = populateKeywords([switches[i], descrip[i], cmds[i], examples[i]])
     custom.save()
     owner.cmds.append(custom._id)
     owner.owns.append(custom._id)
     owner.save()
 
 def main(name):
-  populateGlobals()
   makeUser()
+  populateGlobals()
   populateCustom()
   
 if __name__ == '__main__':

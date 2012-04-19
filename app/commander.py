@@ -252,7 +252,10 @@ class Commander(Thread):
     cmd = clean(self.cmd)
     cmd = cmd.lower()
     cmdHeader = cmd.split(' ')[0]
-    if cmdHeader == 'more':
+    if cmd == 'signup':
+      # signup should have been hit in the controller
+      return
+    elif cmdHeader == 'more':
       self.processMsg('', False)
     elif cmdHeader == "map":
       res = self.mapCommand(cmd)

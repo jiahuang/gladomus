@@ -15,7 +15,7 @@ class Users(Document):
       'message': unicode, 
     }],
     'cmds': [pymongo.objectid.ObjectId], #custom commands they've added
-    'owns': [pymongo.objectid.ObjectId], #custom commands they own & can edit
+    'pw' : unicode,
   }
   # ensuring unique numbers
   indexes = [{ 
@@ -23,9 +23,8 @@ class Users(Document):
     'unique':True, 
   }]
   default_values = {
-    'email':'',
-    'cmds':[],
-    'owns':[],
+    'email':u'',
+    'cmds':[]
   }
   use_dot_notation = True 
   required_fields = ['number']
@@ -58,19 +57,15 @@ class Cache(Document):
   }
   use_dot_notation = True 
 
-@connection.register
-class GlobalCommands(Document): #global commands
-  __collection__ = 'globalCommands'
-  __database__ = DATABASE_GLAD
-  structure = {
-    'cmd' : unicode, 
-    'dateUpdated': datetime.datetime,
-  }
-  default_values = {
-    'dateUpdated':datetime.datetime.utcnow()
-  }
-  use_dot_notation = True 
-
+def populateKeywords(listOfItems):
+  keywords = []
+  for item in listOfItems:
+    if "description" in item:
+      keywords = keywords + unicode(item['description']).lower().split(' ')
+    else:
+      keywords = keywords + unicode(item).lower().split(' ')
+  return keywords
+  
 @connection.register
 class Commands(Document): #user generated commands
   use_schemaless = True
@@ -81,8 +76,10 @@ class Commands(Document): #user generated commands
     'url': unicode,
     'description':unicode,
     'example':unicode,
+    'isGlobal':bool,
     'enumerate': bool, # if true enumerates results
     'switches' : [{
+      'description':unicode,
       'switch':unicode,
       'default':unicode,
       }],
@@ -102,14 +99,16 @@ class Commands(Document): #user generated commands
       }],
     'owner' : pymongo.objectid.ObjectId,
     'dateUpdated': datetime.datetime,
+    '_keywords':[unicode],
   }
   indexes = [{ 
-    'fields':['cmd'], 
+    'fields':['cmd', '_keywords'],
   }]
   default_values = {
     'switches': [],
     'includes':[],
     'excludes':[],
+    'isGlobal': False,
     'enumerate': False,
     'dateUpdated':datetime.datetime.utcnow()
   }

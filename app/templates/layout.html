@@ -2,31 +2,80 @@
 
 <html>
 <head>
-<title>Get Outta Here</title>
+<title>Gladomus: Internet via SMS</title>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/colorbox.css') }}">
+<link href='http://fonts.googleapis.com/css?family=Jockey+One' rel='stylesheet' type='text/css'>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-{% block head %}{% endblock %}
+<script src="{{ url_for('static', filename='js/jquery.colorbox-min.js') }}"></script>
+{% block head %}
+
+{% endblock %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+  $("#login").colorbox();
+  $('#loginButton').click(function(){
+    $.post('/login', 
+			{ number: $('#number').val(), password: $('#password').val()},
+			function(data){
+				console.log(data);
+				if ('error' in data){
+					// TODO: swap this out for a flashed message
+					//alert(data.error)
+					$('#loginError').html(data.error);
+					$('#loginError').show();
+				}
+			}
+		)
+  });
+});
+</script>
 </head>
 
 <body>
 <div id="wrap">
   <div id="header">
-       <span><a href="/">Gladomus</a></span>
-       <span><a href="#">commands</a></span>
-       <span><a href="#">pricing</a></span>
+    <div class="centered">
+          {% if not session.logged_in %}
+          <div id="navlinks">
+            <ul>
+            <li><a id="login" href="{{ url_for('login') }}">Login / Signup</a></li>
+            </ul>
+          </div>
+          {% else %}
+          <div id="navlinks">
+            <ul>
+            <li>{{ session['number'] }}</li>
+            <li><a href="{{ url_for('logout') }}">log out</a></li>
+            </ul>
+          </div>
+          {% endif %}
+          <div style="float:left;">
+            <h1><a href="/">Gladomus</a></h1>
+          </div>
+          <div id="subheadings" style="float:right; margin-top:55px;">
+            <ul>
+              <li style="margin-right:50px;"><a href="{{ url_for('commands') }}">Commands</a></li>
+              <li style="margin-right:330px;"><a href="{{ url_for('createCommands') }}">Create a Command</a></li>
+            </ul>
+          </div>
+    </div>
   </div>
 
   <div class="main">
     {% for message in get_flashed_messages() %}
       <div class="flash">{{ message }}</div>
     {% endfor %}
-	<div id="bodyBlock" >
-    {% block body %}{% endblock %}
+
+    <div id="bodyBlock" >
+      {% block body %}{% endblock %}
     </div>
   </div>
 </div>
   <div id="footer">
-    Contact support@getouttahere.me for questions/concerns
+    Contact support@gladomus.com for questions/concerns
   </div>
 </body>
 </html>
