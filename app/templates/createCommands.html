@@ -2,8 +2,19 @@
 {% block head%}
 <script type="text/javascript">
 $(document).ready(function() {
-  function createTableLabel(tr, label){
-    tr.append($('<td>').append($('<div>').attr('class', 'createLabel').html(label)));
+  String.prototype.clean = function() {
+    return this.replace(/^\s+|\s+$/g,"");
+  }
+    
+  function createTableLabel(tr, label, isChild, labelWidth){
+    labelDiv = $('<div>').html(label);
+    if (isChild)
+      labelDiv.attr('class', 'createLabelInner');
+    else
+      labelDiv.attr('class', 'createLabel');
+    if (labelWidth)
+      labelDiv.attr('style', 'width:'+labelWidth);
+    tr.append($('<td>').append(labelDiv));
     tr.append($('<td>').append($('<input>').attr('type', 'text').attr('class', 'createInput')));
     return tr;
   }
@@ -25,22 +36,22 @@ $(document).ready(function() {
     var parentTbl = $(this).parent().parent().parent().parent();
     console.log(type);
     if (type == "switch"){
-      tr = createTableLabel(tr, 'Switch');
-      tr = createTableLabel(tr, 'Description');
-      tr = createTableLabel(tr, 'Default');
+      tr = createTableLabel(tr, 'Switch', true);
+      tr = createTableLabel(tr, 'Description', true, '75px');
+      tr = createTableLabel(tr, 'Default', true);
       parentTbl.append(tr);
     }
     else if (type == 'inner'){
-      tr = createTableLabel(tr, 'Attribute');
-      tr = createTableLabel(tr, 'Value');
+      tr = createTableLabel(tr, 'Attribute', true);
+      tr = createTableLabel(tr, 'Value', true, '40px');
       parentTbl.append(tr);
     }
     else if (type=='outer'){
-      tr = createTableLabel(tr, 'Tag');
+      tr = createTableLabel(tr, 'Tag', true, '35px');
       var childTbl = $('<table>');
       var childRow = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addButton').attr('type', 'inner')));;
-      childRow = createTableLabel(childRow, 'Attribute');
-      childRow = createTableLabel(childRow, 'Value');
+      childRow = createTableLabel(childRow, 'Attribute', true);
+      childRow = createTableLabel(childRow, 'Value', true, '40px');
       childTbl.append(childRow);
       tr.append($('<td>').append(childTbl));
       parentTbl.append(tr);
@@ -53,99 +64,289 @@ $(document).ready(function() {
   });
 
   $('#submit').click(function(){
-    // try sending a hash
+    // put everything together in a hash
+    var switchesObj = [], includesObj = [], excludesObj = [];
+    $('#switchesTbl tr').each(function(){
+      var inputs = $(this).find(':input');
+      switchesObj.push( {switch:$(inputs[0]).val(), description:$(inputs[1]).val(), default:$(inputs[2]).val()});
+    });
+    console.log(JSON.stringify(switchesObj));
+
+    function getFilteredItems(tblName){
+      var obj = []
+      $('#'+tblName+' >tbody>tr').each(function(){
+        var tagVal = $(this).find(':input:first').val();
+        var innerRows = $(this).find('table tr');
+        var inner = []
+        innerRows.each(function(){
+            var inputs = $(this).find(':input');
+            inner.push({type: $(inputs[0]).val(), value:$(inputs[1]).val()})
+          });
+        console.log(inner);
+        obj.push( {tag:tagVal, matches:inner})
+      });
+      return obj;
+    }
+    
+    includesObj = getFilteredItems('includesTbl');
+    excludesObj = getFilteredItems('excludesTbl');
+    console.log(JSON.stringify(includesObj));
+    console.log(JSON.stringify(excludesObj));
+    cmdObj = {cmd:$('#cmdInput').val(), description:$('#descriptionInput').val(),
+      example:$('#exampleInput').val(),
+      url:$('#urlInput').val(), enumerate:$('#enumerateInput').is(':checked'),
+      switches: switchesObj, includes: includesObj, excludes: excludesObj};
+    
+    $.post('/createCommands/new', 
+			{ cmd: JSON.stringify(cmdObj)},
+			function(data){
+				console.log(data);
+			},
+			'json'
+		)
+    
+		return false;
   });
+
+  $('#exampleInput').blur(function(){
+    $('#testCmd').val($(this).val());
+    $('#testCmd').removeClass('exampleDisplay');
+  });
+
+  function revertToExample(e){
+    console.log(e.val());
+    if (e.val().clean() == "" && e.attr('exampleInput')){
+      e.val(e.attr('exampleInput'));
+      e.addClass('exampleDisplay');
+    }
+  }
+
+  $('.createInput').blur(function(){
+    revertToExample($(this));
+  });
+
+  $('.createInput').focus(function(){
+    if ($(this).val() == $(this).attr('exampleInput')){
+      $(this).val(''); 
+      $(this).removeClass('exampleDisplay');
+    }
+  });
+  
+  $.each($('.exampleDisplay'), function(){
+    revertToExample($(this));
+  });
+  // nav arrow
+  $('.navArrow').hide();
+  $('#createArrow').show();
 });
 </script>
 {% endblock %}
 {% block body %}
-Unsure of how to create a command? <input id="tutButton" type="button" value="Show Tutorial"/>
-<div id="tutorial">
-</div>
 <div id="commandDiv">
-  <table>
+  <div class="circleDiv">
+    <div class="circleLabelSmall">1</div>
+    <div class="circleLabelText">Specify the command name and if you want the results to be numbered or not. (Eg. a list of search results should be numbered)</div>
+    <div class="clear"></div>
+  </div>
+  <table id="createCmdTable" class="tableInput">
     <tr>
-      <td><div class="createLabel">Command</div></td>
-      <td><input type="text" id="cmdInput" class="createInput"/></td>
-    </tr>
-    <tr>
-      <td><div class="createLabel">Url</div></td>
-      <td><input type="text" id="urlInput" class="createInput"/></td>
-    </tr>
-    <tr>
-      <td><div class="createLabel">Switches</div></td>
-      <td>
-        <table id="switchesTbl">
-          <tr>
-            <td><div class="addButton" type="switch"></div></td>
-            <td><div class="createLabel">Switch</div></td>
-            <td><input type="text" class="createInput" switchType="switch"/></td>
-            <td><div class="createLabel">Description</div></td>
-            <td><input type="text" class="createInput" switchType="description"/></td>
-            <td><div class="createLabel">Default</div></td>
-            <td><input type="text" class="createInput" switchType="default"/></td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td><div class="createLabel">Includes</div></td>
-      <td>
-        <table id="includesTbl">
-          <tr>
-            <td><div class="addButton" type="outer"></div></td>
-            <td><div class="createLabel">Tag</div></td>
-            <td><input type="text" class="createInput" includeType="tag"/></td>
-            <td>
-              <table id="includesTblInner">
-                <tr>
-                <td><div class="addButton" type="inner"></div></td>
-                <td><div class="createLabel">Attribute</div></td>
-                <td><input type="text" class="createInput tagInner" includeType="attribute"/></td>
-                <td><div class="createLabel">Value</div></td>
-                <td><input type="text" class="createInput tagInner" includeType="value"/></td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td><div class="createLabel">Excludes</div></td>
-      <td>
-        <table id="excludesTbl">
-          <tr>
-            <td><div class="addButton" type="outer"></div></td>
-            <td><div class="createLabel">Tag</div></td>
-            <td><input type="text" class="createInput" excludeType="tag"/></td>
-            <td>
-              <table id="excludesTblInner">
-                <tr>
-                <td><div class="addButton" type="inner"></div></td>
-                <td><div class="createLabel">Attribute</div></td>
-                <td><input type="text" class="createInput" excludeType="attribute"/></td>
-                <td><div class="createLabel">Value</div></td>
-                <td><input type="text" class="createInput" excludeType="value"/></td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td><div class="createLabel">Description</div></td>
-    </tr>
-    <tr>
-      <td><textarea id="descriptionInput"></textarea></td>
+      <td width="80px;"><div class="createLabel">Command</div></td>
+      <td width="130px;"><input type="text" id="cmdInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: reddit" value="{%if cmd is defined%}{{cmd.cmd}}{%endif%}"/></td>
+      <td width="150px;"><div class="createLabel" style="width:150px; text-align:right;">Enumerate Results</div></td>
+      <td width="400px;"><input type="checkbox" id="enumerateInput" class="createInput"/></td>
     </tr>
   </table>
-  <div class="header">Test the command</div>
-  <input type="text" id="testCmd"/>
-  <input type="button" value="Test"/>
-  <textarea id="testOutput" ></textarea>
-
-  <input type="button" id="submit" value="Save Command"/>
+  <div class="circleDiv">
+    <div class="circleLabelSmall">2</div>
+    <div class="circleLabelText">Specify the url. If there are parameters in the url, specify the switch letter and wrap them with {}</div>
+    <div class="clear"></div>
+  </div>
+  <table class="tableInput">
+    <tr>
+      <td width="30px;" class="tdSpacing"><div class="createLabel">Url</div></td>
+      <td  class="tdSpacing"><input type="text" id="urlInput" style="width:630px;"
+        class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: http://www.reddit.com/r/{s.}" value="{%if cmd is defined%}{{cmd.url}}{%endif%}"/></td>
+    </tr>
+    <tr>
+      <td class="tdSpacing"><div class="createLabel">Switches</div></td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <table id="switchesTbl">
+          <tbody class="innerTbody">
+          {%if cmd is defined and cmd.switches|length > 0%}
+            {%for switch in cmd.switches%}
+              <tr>
+              <td>{%if loop.last%}<div class="addButton" type="switch">{%endif%}</div></td>
+              <td><div class="createLabelInner">Switch</div></td>
+              <td><input type="text" class="createInput" value="{{switch.switch}}"/></td>
+              <td><div class="createLabelInner" style="width:75px;">Description</div></td>
+              <td><input type="text" class="createInput" value="{{switch.description}}"/></td>
+              <td><div class="createLabelInner">Default</div></td>
+              <td><input type="text" class="createInput" value="{{switch.default}}"/></td>
+              </tr>
+            {%endfor%}
+          {%else%}
+            <tr>
+            <td><div class="addButton" type="switch"></div></td>
+            <td><div class="createLabelInner">Switch</div></td>
+            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: s" value=""/></td>
+            <td><div class="createLabelInner" style="width:75px;">Description</div></td>
+            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: subreddit" value=""/></td>
+            <td><div class="createLabelInner">Default</div></td>
+            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: all" value=""/></td>
+            </tr>
+          {%endif%}
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    </table>
+    <div class="circleDiv">
+      <div class="circleLabelSmall">3</div>
+      <div class="circleLabelText">Specify which elements of the url you would like to have in your results</div>
+      <div class="clear"></div>
+    </div>
+    <table class="tableInput">
+    <tr>
+      <td class="tdSpacing"><div class="createLabel">Includes</div></td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <table id="includesTbl">
+        <tbody class="innerTbody">
+          {%if cmd is defined and cmd.includes|length > 0%}
+            {%for include in cmd.includes%}
+              <tr>
+                <td>{%if loop.last%}<div class="addButton" type="outer"></div>{%endif%}</td>
+                <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
+                <td><input type="text" class="createInput" value="{{include.tag}}"/></td>
+                <td>
+                  <table>
+                    {%for match in include.matches%}
+                      <tr>
+                      <td>{%if loop.last%}<div class="addButton" type="inner">{%endif%}</div></td>
+                      <td><div class="createLabelInner">Attribute</div></td>
+                      <td><input type="text" class="createInput tagInner" value="{{match.type}}"/></td>
+                      <td><div class="createLabelInner" style="width:40px;">Value</div></td>
+                      <td><input type="text" class="createInput tagInner" value="{{match.value}}"/></td>
+                      </tr>
+                    {%endfor%}
+                  </table>
+                </td>
+              </tr>
+            {%endfor%}
+          {%else%}
+          <tr>
+            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
+            <td><input type="text" class="createInput exampleDisplay" exampleInput="example: a" value=""/></td>
+            <td>
+              <table>
+                <tr>
+                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="createLabelInner">Attribute</div></td>
+                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
+                <td><div class="createLabelInner" style="width:40px;">Value</div></td>
+                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: title" value=""/></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {%endif%}
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    </table>
+    <div class="circleDiv">
+      <div class="circleLabelSmall">4</div>
+      <div class="circleLabelText">If there are any elements in the includes that you don't want to have in your results, specify them here.</div>
+      <div class="clear"></div>
+    </div>
+    <table class="tableInput">
+    <tr>
+      <td class="tdSpacing"><div class="createLabel">Excludes</div></td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <table id="excludesTbl">
+        <tbody class="innerTbody">
+          {%if cmd is defined and cmd.excludes|length > 0%}
+            {%for exclude in cmd.excludes%}
+              <tr>
+                <td>{%if loop.last%}<div class="addButton" type="outer"></div>{%endif%}</td>
+                <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
+                <td><input type="text" class="createInput" value="{{exclude.tag}}"/></td>
+                <td>
+                  <table>
+                    {%for match in exclude.matches%}
+                      <tr>
+                      <td>{%if loop.last%}<div class="addButton" type="inner">{%endif%}</div></td>
+                      <td><div class="createLabelInner">Attribute</div></td>
+                      <td><input type="text" class="createInput tagInner" value="{{match.type}}"/></td>
+                      <td><div class="createLabelInner" style="width:40px;">Value</div></td>
+                      <td><input type="text" class="createInput tagInner" value="{{match.value}}"/></td>
+                      </tr>
+                    {%endfor%}
+                  </table>
+                </td>
+              </tr>
+            {%endfor%}
+          {%else%}
+          <tr>
+            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
+            <td><input type="text" class="createInput exampleDisplay" exampleInput="example: div" value=""/></td>
+            <td>
+              <table>
+                <tr>
+                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="createLabelInner">Attribute</div></td>
+                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
+                <td><div class="createLabelInner" style="width:40px;">Value</div></td>
+                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: unvoted" value=""/></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {%endif%}
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    </table>
+    <div class="circleDiv">
+      <div class="circleLabelSmall">5</div>
+      <div class="circleLabelText">Give others a description of what your command does and an example usage</div>
+      <div class="clear"></div>
+    </div>
+    <table class="tableInput">
+    <tr>
+      <td class="tdSpacing" width="100px;"><div class="createLabel">Description</div></td>
+      <td colspan='3' class="tdSpacing"><textarea id="descriptionInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" style="width:625px;" exampleInput="example: Returns the headlines on the first page of a subreddit. If a subreddit isn't defined, it defaults to /r/all">{%if cmd is defined%}{{cmd.description}}{%endif%}</textarea></td>
+    </tr>
+    <tr>
+      <td class="tdSpacing"><div class="createLabel">Example</div></td>
+      <td class="tdSpacing"><input type="text" id="exampleInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: reddit s.worldnews" value="{%if cmd is defined%}{{cmd.example}}{%endif%}"/></td>
+    </tr>
+  </table>
+  <div class="circleDiv">
+    <div class="circleLabelSmall">6</div>
+    <div class="circleLabelText">Test the command to make sure it works</div>
+    <div class="clear"></div>
+  </div>
+  <div class="tableInput"> 
+    <input type="text" class="createInput exampleDisplay" exampleInput="reddit s.worldnews" style="width:300px;" id="testCmd"/>
+    <input type="button" value="Test"/>
+    <br/>
+    <div style="margin-top:10px; font: 13px Arial; color:#454545; font-weight:bold;">Output from the test...</div>
+    <textarea id="testOutput" class="createInput" style="width:735px;" disabled="disabled"></textarea>
+    <br/>
+    </div>
+  <div style="margin-top:20px; font: 13px Arial; color:#454545; font-weight:bold; float:right; margin-right:25px;">Everything looks good? Awesome</div>
+  <div class="clear"></div>
+  <input type="button" id="submit" style="float:right; margin-right:25px; margin-top:10px;"value="Save Command"/>
 </div>
+<div class="clear"></div>
 {% endblock %}

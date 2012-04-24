@@ -18,10 +18,8 @@ import datetime, sys, json, time, uuid, subprocess
 from models import *
 from commander import Commander, clean
 import twilio.twiml
-import string
-from random import sample, choice
 from logger import log
-import bcrypt
+import simplejson
 
 ########################################################################
 # Configuration
@@ -32,15 +30,18 @@ DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-GLADOMUS_USER = db.User.find_one({'number':TWILIO_NUM})
 ########################################################################
 # Helper functions
 ########################################################################
-
+def addAsGladomusCmd(cmd):
+  user = db.User.find_one({'number':TWILIO_NUM})
+  user.cmds.append(cmd._id)
+  user.save()
+  
 def getUser():
   if 'logged_in' in session and session['logged_in'] == True: 
     if 'uid' in session:
-      return db.User.find_one({'_id':session['uid']})
+      return db.Users.find_one({'_id':session['uid']})
   return None
 
 def json_res(obj):
@@ -49,11 +50,7 @@ def json_res(obj):
   return Response(json.dumps(obj, default=dthandler), mimetype='application/json')
 
 def autoPw(number):
-  # generate new pw
-  chars = string.letters + string.digits
-  length = 8
-  pw = ''.join(choice(chars) for _ in range(length))
-  print pw
+  pw = generatePw()
   # updates associated number w/ pw
   db.user.update({'number':number}, {'$set':{'pw':bcrypt.hashpw(pw, bcrypt.gensalt()).decode()}})
   return pw
@@ -64,8 +61,8 @@ def jsonCmd_res(objs, isCursor):
   if objs == None or len(objs) == 0:
     return Response(False, mimetype='application/json')
   # assumes that objs is a cursor
-  if 'logged_in' in session and session['logged_in'] == True: 
-    cmds = db.User.find_one({'_id':session['uid']}, {'cmds':1})
+  if 'logged_in' in session and session['logged_in'] == True:
+    cmds = getUser().cmds#db.Users.find_one({'_id':session['uid']}, {'cmds':1})
   else:
     cmds = []
   #print cmds
@@ -112,6 +109,9 @@ def commandsAjax():
         # sort by commands user has added
         userCmds = user.cmds
         cmdList = list(db.Commands.find({'_keywords':search, '_id':{'$in':userCmds}}))
+        altList = list(db.Commands.find({'_keywords':search, '_id':{'$nin':userCmds}}))
+        if order == pymongo.DESCENDING: cmdList = cmdList + altList
+        else: cmdList = altList + cmdList
         cmdList = cmdList + list(db.Commands.find({'_keywords':search, '_id':{'$nin':userCmds}}))
         isCursor = False
         cmdList = cmdList[(page-1)*20:page*20]
@@ -125,7 +125,9 @@ def commandsAjax():
         # sort by commands user has added
         userCmds = user.cmds
         cmdList = list(db.Commands.find({'_id':{'$in':userCmds}}))
-        cmdList = cmdList + list(db.Commands.find({'_id':{'$nin':userCmds}}))
+        altList = list(db.Commands.find({'_id':{'$nin':userCmds}}))
+        if order == pymongo.DESCENDING: cmdList = cmdList + altList
+        else: cmdList = altList + cmdList
         cmdList = cmdList[(page-1)*20:page*20]
         isCursor = False
       elif sortByList[sortQuery] != 'added':
@@ -203,7 +205,7 @@ def updateUser():
 
   return json_res({'success': _+'was updated successfully'})
   
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET'])
 def logout():
   session.pop('logged_in', None)
   session.pop('uid', "")
@@ -214,21 +216,20 @@ def logout():
 @app.route('/createCommands/add/<cmdId>', methods=['POST'])
 def addCommand(cmdId):
   user = getUser()
+  cmdId = pymongo.objectid.ObjectId(cmdId)
   if user:
     if cmdId in user.cmds:
       # remove from commands
-      user.cmds = user.cmds.remove(cmdId)
+      user.cmds.remove(cmdId)
       user.save()
-      flash('Successfully removed this command')
-      return json_res({'success':'Successfully removed this command'})
+      return json_res({'success':'Successfully removed this command from your list'})
     else:
-      user.cmds.append(cmd)
+      user.cmds.append(cmdId)
       user.save()
-      flash('Successfully added this command')
       return json_res({'success':'Successfully added this command'})
   else:
     flash('Error: you must be logged in to add commands')
-    return json_res({'error':'you must be logged in to add a command'})
+  return json_res({'error':'you must be logged in to add a command'})
 
 @app.route('/createCommands/edit/<cmdId>', methods=['GET', 'POST'])
 def editCommand(cmdId):
@@ -273,12 +274,38 @@ def editCommand(cmdId):
 @app.route('/createCommands/new', methods=['GET', 'POST'])
 def createCommands():
   if request.method == "POST":
+    try:
+      inputCmd = json.loads(request.form.get('cmd', ''))
+      print inputCmd
+      # make sure user doesn't already have this command
+      user = getUser()
+      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
+      for userCmd in userCmds:
+        if userCmd['cmd'] == inputCmd['cmd'].lower():
+          return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
+          
+      postCmd = db.Commands()
+      postCmd.cmd = inputCmd['cmd'].lower()
+      postCmd.url = inputCmd['url'] # TODO: make sure this url is clean
+      postCmd.description = inputCmd['description']
+      postCmd.example = inputCmd['example']
+      postCmd.enumerate = inputCmd['enumerate']
+      postCmd.switches = inputCmd['switches']
+      postCmd.includes = inputCmd['includes']
+      postCmd.excludes = inputCmd['excludes']
+      postCmd.owner = user._id
+      postCmd.save()
+      user.cmds.append(postCmd._id)
+      user.save()
+    except:
+      return json_res({'error': 'Error: the command could not be created. '+str(sys.exc_info()[0])})
+    
     # new command is created
     return json_res({'success':'The command has been successfully created'})
 
   # its a get
   return render_template('createCommands.html')
-
+  
 @app.route('/login', methods=['GET','POST'])
 def login():
   if request.method == 'POST':
@@ -306,14 +333,17 @@ def login():
       hash = bcrypt.hashpw(request.form.get('password'), user.pw)
     except:
       pass
-    if hash != user.password:
+    if hash != user.pw:
+      print hash
+      print user.number, user.pw
       return json_res({'error':'Either the username or the password is not in our system'})
       
     session['logged_in'] = True
     session['uid'] = user._id
     session['number'] = user.number
-    # grab list of commands user has
-    return render_template('commands.html')
+    session['free'] = user.freeMsg
+    session['paid'] = user.paidMsg
+    return json_res({'success':"Welcome to Gladomus"}) #render_template('commands.html')
 
   # GET
   return render_template('loginPopup.html')

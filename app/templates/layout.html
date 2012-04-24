@@ -12,26 +12,32 @@
 {% block head %}
 
 {% endblock %}
-
 <script type="text/javascript">
 $(document).ready(function() {
-  $("#login").colorbox();
-  $('#loginButton').click(function(){
-    $.post('/login', 
-			{ number: $('#number').val(), password: $('#password').val()},
-			function(data){
-				console.log(data);
-				if ('error' in data){
-					// TODO: swap this out for a flashed message
-					//alert(data.error)
-					$('#loginError').html(data.error);
-					$('#loginError').show();
-				}
-			}
-		)
-  });
+  
+  $("#login").colorbox({onComplete:function(){
+      $('#loginButton').click(function(){
+      console.log('loginClicked');
+      $.post('/login', 
+        { number: $('#number').val(), password: $('#password').val()},
+        function(data){
+          console.log(data);
+          if ('error' in data){
+            // TODO: swap this out for a flashed message
+            //alert(data.error)
+            $('#loginError').html(data.error);
+            $('#loginError').show();
+          }
+          else if ('success' in data){
+            window.location.reload();
+          }
+        }
+      )
+    });
+    }});
 });
 </script>
+
 </head>
 
 <body>
@@ -40,35 +46,41 @@ $(document).ready(function() {
     <div class="centered">
           {% if not session.logged_in %}
           <div id="navlinks">
-            <ul>
-            <li><a id="login" href="{{ url_for('login') }}">Login / Signup</a></li>
-            </ul>
+            <a id="login" href="{{ url_for('login') }}">Login / Signup</a>
           </div>
           {% else %}
           <div id="navlinks">
-            <ul>
-            <li>{{ session['number'] }}</li>
-            <li><a href="{{ url_for('logout') }}">log out</a></li>
-            </ul>
+            <span class="orange">
+            {{session['free']}} free/{{session['free']}} paid msgs
+            </span>
+            {{ session['number'] }}
+            <a href="{{ url_for('logout') }}">log out</a>
           </div>
           {% endif %}
           <div style="float:left;">
             <h1><a href="/">Gladomus</a></h1>
+            <div class="navArrow" id="mainArrow" style="margin-left:90px; margin-top:-10px; display:none;"></div>
           </div>
-          <div id="subheadings" style="float:right; margin-top:55px;">
-            <ul>
-              <li style="margin-right:50px;"><a href="{{ url_for('commands') }}">Commands</a></li>
-              <li style="margin-right:330px;"><a href="{{ url_for('createCommands') }}">Create a Command</a></li>
-            </ul>
+          <div id="subheadings" style="float:right;">
+            <div style="margin-right:20px; float:left; width:120px;">
+              <a href="{{ url_for('commands') }}">commands</a>
+              <div class="navArrow" id="commandsArrow" style="margin-left:35px; margin-top:5px; display:none;"></div>
+            </div>
+            <div style="margin-right:330px; float:left; width:150px;">
+              <a href="{{ url_for('createCommands') }}">create a command</a>
+              <div class="navArrow" id="createArrow" style="margin-left:60px; margin-top:5px; display:none;"></div>
+            </div>
           </div>
     </div>
   </div>
-
+  <div id="navIndicator"></div>
+  
   <div class="main">
+    <!--
     {% for message in get_flashed_messages() %}
       <div class="flash">{{ message }}</div>
     {% endfor %}
-
+    -->
     <div id="bodyBlock" >
       {% block body %}{% endblock %}
     </div>

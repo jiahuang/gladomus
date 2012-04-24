@@ -9,6 +9,7 @@ def makeUser():
   user.active = datetime.datetime.utcnow() + datetime.timedelta(days=5)
   req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
   user.requests = [req]
+  user.pw = bcrypt.hashpw('123qwe', bcrypt.gensalt()).decode()
   user.save()
       
 def populateGlobals():
@@ -39,7 +40,12 @@ def populateGlobals():
     custom.owner = owner._id
     custom.switches = switches[i]
     custom.example = unicode(examples[i])
-    custom._keywords = populateKeywords([switches[i], descrip[i], cmds[i], examples[i]])
+    l = list(switches[i]);
+    l.append(descrip[i])
+    l.append(cmds[i])
+    l.append(examples[i])
+    custom._keywords = populateKeywords(l)
+    print custom._keywords
     custom.save()
 
 def populateCustom():
@@ -81,10 +87,13 @@ def populateCustom():
     custom.url = urls[i]
     custom.enumerate = enumerates[i]
     custom.example = examples[i]
-    custom._keywords = populateKeywords([switches[i], descrip[i], cmds[i], examples[i]])
+    l = list(switches[i]);
+    l.append(descrip[i])
+    l.append(cmds[i])
+    l.append(examples[i])
+    custom._keywords = populateKeywords(l)
     custom.save()
     owner.cmds.append(custom._id)
-    owner.owns.append(custom._id)
     owner.save()
 
 def main(name):

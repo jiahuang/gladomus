@@ -21,7 +21,7 @@ $(document).ready(function() {
       $.post('/commandsAjax',
         {page:PAGE, sortBy:SORTBY, order:ORDER, search:SEARCH}, 
         function(data){
-          console.log(data);
+          //console.log(data);
           hideLoading();
           if (data){ insertRows(data);}
           else{ Table.append(endRow);}
@@ -43,48 +43,84 @@ $(document).ready(function() {
       // clear all the rows
       Table.empty();
     }
+
+    $('.addCmd,.removeCmd').live('click', function(){
+      // adds that command, changes color of button
+      console.log($(this));
+      var that = $(this);
+      $.post($(this).attr('url'),
+        function(data){
+          if(that.hasClass('addCmd')){
+            that.removeClass('addCmd');
+            that.addClass('removeCmd');
+            that.text('remove');
+          }
+          else if (that.hasClass('removeCmd')){
+            that.removeClass('removeCmd');
+            that.addClass('addCmd');
+            that.text('add');
+          }
+        },
+        'json'
+      )
+    });
+
+    $('.editCmd').live('click', function(){
+      // brings user to the createCommand page for editing
+      window.location = $(this).attr('url');
+    });
     
     insertRow = function(item){
-      console.log(item);
-      console.log(item['id'])
-      var addDiv = $('<div>').attr('class', 'notificationNumber').attr('url', '/createCommands/add/'+item['id']).text('add');
-      var editDiv = $('<div>').attr('class', 'notificationNumber').attr('url', '/createCommands/edit/'+item['id']).text('edit');
+      //console.log(item);
+      //console.log(item['id'])
+      if (item['added'])
+        var addDiv = $('<td>').append($('<div>').attr('class', 'removeCmd').attr('url', '/createCommands/add/'+item['id']).text('remove')).attr('width', '60px');
+      else
+        var addDiv = $('<td>').append($('<div>').attr('class', 'addCmd').attr('url', '/createCommands/add/'+item['id']).text('add')).attr('width', '60px');
+      var editDiv = $('<td>').append($('<div>').attr('class', 'editCmd').attr('url', '/createCommands/edit/'+item['id']).text('edit')).attr('width', '60px');
+      var padDiv = $('<td>').attr('width', '30px');
       var switches = $('<table>')
       $.each(item['switches'], function(){
         switches.append($('<tr>')
           .append($('<td>')
-            .append($('<div>').attr('class', 'notificationNumber').text(this['switch'])) /*todo: add default on hover*/
+            .append($('<div>').attr('class', 'text').text(this['switch'])) /*todo: add default on hover*/
           )
           .append($('<td>')
-            .append($('<div>').attr('class', 'notificationNumber').text(this['description']))
+            .append($('<div>').attr('class', 'text').text(this['description']))
           ));
       });
-      var cmd = $('<div>').attr('class', 'notificationNumber').text(item['cmd']); /*todo: add gobal tag*/
-      var descp = $('<div>').attr('class', 'notificationNumber').text(item['description']);
-      var example = $('<div>').attr('class', 'notificationNumber').text(item['example']);
+      var cmd = $('<div>').attr('class', 'text bold').text(item['cmd']); /*todo: add gobal tag*/
+      var descp = $('<div>').attr('class', 'text').text(item['description']);
+      var example = $('<div>').attr('class', 'text').text(item['example']);
 
       var offset = new Date().getTimezoneOffset()*60*1000*-1;
       var date = new Date(item['dateUpdated'] + offset);
-      var dateUpdated = $('<div>').attr('class', 'notificationNumber').text(date.getMonth()+"/"+date.getDate()+" "+date.getHours()+":"+date.getMinutes());
+      var dateUpdated = $('<div>').attr('class', 'text').text(date.getMonth()+"/"+date.getDate()+" "+date.getHours()+":"+date.getMinutes());
       
       var tr = $('<tr>')
         .append($('<td>')
           .append(cmd)
-        ).append($('<td>')
+        .attr('width', '120px'))
+        .append($('<td>')
           .append(descp)
-        ).append($('<td>')
+        .attr('width', '180px'))
+        .append($('<td>')
           .append(example)
-        ).append($('<td>')
+        .attr('width', '190px'))
+        .append($('<td>')
           .append(switches)
-        ).append($('<td>')
+        .attr('width', '150px'))
+        .append($('<td>')
           .append(dateUpdated)
-        )//.attr('id', id)
-        .attr('class', 'urlRow');
+        .attr('width', '120px'));//.attr('id', id)
       //rowId++;
 
       if(ADDDIV){
         tr.prepend(editDiv);
         tr.prepend(addDiv);
+      }
+      else{
+        tr.prepend(padDiv);
       }
       Table.append(tr);
     }
@@ -96,8 +132,7 @@ $(document).ready(function() {
         insertRow(this);
       });
     }
-
-
+    
     Anchor.scroll(function(){
           console.log(Anchor.offset().top + ' ' + Anchor.scrollTop());
           // within 50 pixels of the end, lets load some more
@@ -117,12 +152,16 @@ $(document).ready(function() {
   $('#dateAsc').click(function(){cmdTable.grabCommands(1, 2, 1, '');});
   $('#dateDsc').click(function(){cmdTable.grabCommands(1, 2, 0, '');});
   cmdTable.grabCommands(1, 0, -1, '');
+
+  // nav arrow
+  $('.navArrow').hide();
+  $('#commandsArrow').show();
 }); </script>
 {% endblock %}
 {% block body %}
 <div id="cmdDiv">
   <table id="cmdTable" style="width:800px; margin:30px auto; display:block;" border="0" cellspacing="0">
-			<tr id="headerRow" style="background-color:#CEE5F5; height:30px;">
+			<tr id="headerRow" style="height:30px;">
         {% if session.logged_in %}
         <td width="50px">
           <table>
@@ -132,10 +171,9 @@ $(document).ready(function() {
                 <tr><td><div id="addDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
               </table>
               </td>
-              <td>Added</td>
+              <td><div class="header" style="width:33px; margin-left:auto; margin-right:auto;">Add</div></td>
             </tr>
           </table>
-        <td width="50px"></td>
         <script>ADDDIV = true;</script>
         {%endif%}
         <td width="80px">
@@ -146,13 +184,13 @@ $(document).ready(function() {
                 <tr><td><div id="cmdDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
               </table>
               </td>
-              <td><div class="header" style="width:13px; margin-left:auto; margin-right:auto;">Command</div></td>
+              <td><div class="header" style="width:80px;">Command</div></td>
             </tr>
           </table>
         </td>
-				<td width="200px"><div class="header" style="width:25px; margin-left:auto; margin-right:auto;">Description</div> </td>
-				<td width="150px"><div class="header" style="width:55px; margin-left:auto; margin-right:auto;">Example</div> </td>
-        <td width="100px"><div class="header" style="width:55px; margin-left:auto; margin-right:auto;">Switches</div> </td>
+				<td width="200px"><div class="header" style="width:87px; margin-left:auto; margin-right:auto;">Description</div> </td>
+				<td width="175px"><div class="header" style="width:65px; margin-left:auto; margin-right:auto;">Example</div> </td>
+        <td width="125px"><div class="header" style="width:70px; margin-left:auto; margin-right:auto;">Switches</div> </td>
         <td width="100px">
           <table>
             <tr>
@@ -161,19 +199,21 @@ $(document).ready(function() {
                 <tr><td><div id="dateDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
               </table>
               </td>
-              <td><div class="header" style="width:13px; margin-left:auto; margin-right:auto;">Date Updated</div></td>
+              <td><div class="header" style="width:65px; margin-left:auto; margin-right:auto;">Updated</div></td>
             </tr>
           </table>
+        </td>
+        <td width="50px;">
         </td>
       </tr>
       <tr>
         {% if session.logged_in %}
-        <td colspan='7'>
+        <td colspan='8'>
         {%else%}
-        <td colspan='5'>
+        <td colspan='6'>
         {%endif%}
-          <div id="cmdTableAnchor" style="width:660px; height:550px; overflow-y:scroll;">
-          <table id="cmdTableInner">
+          <div id="cmdTableAnchor" style="width:800px; height:550px; overflow-y:scroll;">
+          <table id="cmdTableInner" cellspacing="0" cellpadding="0">
           </table>
           </div>
         </td>

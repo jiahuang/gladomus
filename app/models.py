@@ -1,6 +1,16 @@
 import datetime
 from logger import log
 from globalConfigs import *
+import string
+from random import sample, choice
+import bcrypt
+
+def generatePw():
+  # generate new pw
+  chars = string.letters + string.digits
+  length = 8
+  pw = ''.join(choice(chars) for _ in range(length))
+  return pw
 
 @connection.register
 class Users(Document):
@@ -9,10 +19,11 @@ class Users(Document):
   structure = {
     'number' : unicode,
     'email' : unicode,
-    'active' : datetime.datetime,
+    'freeMsg' : int,
+    'paidMsg' : int,
     'requests' : [{	
       'time': datetime.datetime,
-      'message': unicode, 
+      'message': unicode,
     }],
     'cmds': [pymongo.objectid.ObjectId], #custom commands they've added
     'pw' : unicode,
@@ -24,7 +35,10 @@ class Users(Document):
   }]
   default_values = {
     'email':u'',
-    'cmds':[]
+    'cmds':[],
+    'freeMsg':10,
+    'paidMsg':0,
+    'pw':bcrypt.hashpw(generatePw(), bcrypt.gensalt()).decode()
   }
   use_dot_notation = True 
   required_fields = ['number']
@@ -57,6 +71,7 @@ class Cache(Document):
   }
   use_dot_notation = True 
 
+# keywords should be created for switches, cmd, description, example
 def populateKeywords(listOfItems):
   keywords = []
   for item in listOfItems:
@@ -64,7 +79,8 @@ def populateKeywords(listOfItems):
       keywords = keywords + unicode(item['description']).lower().split(' ')
     else:
       keywords = keywords + unicode(item).lower().split(' ')
-  return keywords
+  #print keywords
+  return list(set(keywords))
   
 @connection.register
 class Commands(Document): #user generated commands
