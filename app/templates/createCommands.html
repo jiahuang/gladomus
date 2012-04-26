@@ -63,7 +63,7 @@ $(document).ready(function() {
     $(this).remove();
   });
 
-  $('#submit').click(function(){
+  function postCommand(url, resFunction){
     // put everything together in a hash
     var switchesObj = [], includesObj = [], excludesObj = [];
     $('#switchesTbl tr').each(function(){
@@ -97,17 +97,40 @@ $(document).ready(function() {
       url:$('#urlInput').val(), enumerate:$('#enumerateInput').is(':checked'),
       switches: switchesObj, includes: includesObj, excludes: excludesObj};
     
-    $.post('/createCommands/new', 
+    $.post(url, 
 			{ cmd: JSON.stringify(cmdObj)},
 			function(data){
-				console.log(data);
+        if (typeof resFunction == 'function')
+          resFunction(data);
 			},
 			'json'
 		)
     
 		return false;
+  }
+
+  $('#submit').click(function(){
+    postCommand('/createCommands/new');
   });
 
+  $('#testButton').click(function(){
+    postCommand('/createCommands/test', function(data){
+      console.log(data)
+      if ("error" in data){
+        $('#testOutput').val(data['error']);
+        $('#testOutput').addClass('red');
+        $('#saveReady').html("Looks like there are some errors in your command. Fix them before saving.");
+        $('#submit').attr('disabled', 'disabled');
+      }
+      else if ("success" in data){
+        $('#testOutput').val('Success: '+data['success']);
+        $('#testOutput').removeClass('red');
+        $('#saveReady').html("Everything looks good? Awesome, save it.");
+        $('#submit').attr('disabled', false);
+      } 
+      });
+  });
+  
   $('#exampleInput').blur(function(){
     $('#testCmd').val($(this).val());
     $('#testCmd').removeClass('exampleDisplay');
@@ -135,6 +158,7 @@ $(document).ready(function() {
   $.each($('.exampleDisplay'), function(){
     revertToExample($(this));
   });
+
   // nav arrow
   $('.navArrow').hide();
   $('#createArrow').show();
@@ -337,16 +361,16 @@ $(document).ready(function() {
     <div class="clear"></div>
   </div>
   <div class="tableInput"> 
-    <input type="text" class="createInput exampleDisplay" exampleInput="reddit s.worldnews" style="width:300px;" id="testCmd"/>
-    <input type="button" value="Test"/>
+    <input type="text"  class="createInput exampleDisplay" exampleInput="reddit s.worldnews" style="width:300px;" id="testCmd"/>
+    <input type="button" id="testButton" value="Test"/>
     <br/>
     <div style="margin-top:10px; font: 13px Arial; color:#454545; font-weight:bold;">Output from the test...</div>
-    <textarea id="testOutput" class="createInput" style="width:735px;" disabled="disabled"></textarea>
+    <textarea id="testOutput" class="createInput" style="width:735px; height:130px;" disabled="disabled"></textarea>
     <br/>
     </div>
-  <div style="margin-top:20px; font: 13px Arial; color:#454545; font-weight:bold; float:right; margin-right:25px;">Everything looks good? Awesome</div>
+  <div id="saveReady" style="margin-top:20px; font: 13px Arial; color:#454545; font-weight:bold; float:right; margin-right:25px;">You must test your command before you can save it.</div>
   <div class="clear"></div>
-  <input type="button" id="submit" style="float:right; margin-right:25px; margin-top:10px;"value="Save Command"/>
+  <input type="button" id="submit" style="float:right; margin-right:25px; margin-top:10px;"value="Save Command" disabled="disabled"/>
 </div>
 <div class="clear"></div>
 {% endblock %}

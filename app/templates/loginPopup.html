@@ -6,26 +6,22 @@ $(document).ready(function() {
 </script>
 
 <div style="background:white; width:500px; height:250px;">
-  <div style="width:200px; float:left;">
-      No Account?
-      It's free to get an account!
-      Just text "signup" to (1)919-666-3455.
-      
+  <div style="width:200px; float:left; margin-top:30px; margin-left:20px;">
+      <div class="center" style="width:105px; font-weight:20px; color:#00456B; font-weight:bold;">No Account?</div>
+      <div class="loginLabel" style="margin-top:5px;">It's free to get an account!*</div>
+      <div class="loginLabel" style="margin-top:5px;">Just text "signup" to <br/><span class="dblue">(1)919-666-3455</span></div>
+      <div class="note" style="font-size:10px; color:#616161; margin-top:100px;">*regular texting rates according to your carrier apply</div>
     </div>
-  <div style=" position:absolute;
-    left:50%;
-    top:10%;
-    bottom:10%;
-    border-left:2px solid blue;"></div>
-  <div style="width:200px; float:right;">
-    Login
-    Number
-    <input id="number" type="text"/>
-    Password
-    <input id="password" type="password"/>
+  <div class="dividerDiv"></div>
+  <div style="width:200px; float:right; margin-top:30px; margin-right:20px;">
+    <div class="loginLabel">Number</div>
+    <input id="number" type="text" class="createInput"/>
+    <div class="loginLabel">Password</div>
+    <input id="password" type="password" class="createInput"/>
     <div id="loginError"></div>
-    <button id="loginButton" type="button">Login</button>
-    Forgot your password?
-    Text "newpw" to (1)919-666-3455 to reset your password.
+    <input type="button" id="loginButton" type="button" style="float:right; margin-right:22px; margin-top:5px;" value="Login"/>
+    <div class="clear"></div>
+    <div class="loginLabel" style="margin-top:40px;">Forgot your password?</div>
+    <div class="createLabel" style="margin-top:5px;">Text "newpw" to <span class="dblue">(1)919-666-3455</span> to reset your password.</div>
   </div>
 </div>

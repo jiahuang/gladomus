@@ -79,7 +79,7 @@ def populateKeywords(listOfItems):
       keywords = keywords + unicode(item['description']).lower().split(' ')
     else:
       keywords = keywords + unicode(item).lower().split(' ')
-  #print keywords
+  #uniquifying keywords
   return list(set(keywords))
   
 @connection.register
@@ -115,6 +115,7 @@ class Commands(Document): #user generated commands
       }],
     'owner' : pymongo.objectid.ObjectId,
     'dateUpdated': datetime.datetime,
+    'tested':bool,
     '_keywords':[unicode],
   }
   indexes = [{ 
@@ -126,6 +127,7 @@ class Commands(Document): #user generated commands
     'excludes':[],
     'isGlobal': False,
     'enumerate': False,
+    'tested':False,
     'dateUpdated':datetime.datetime.utcnow()
   }
   use_dot_notation = True 

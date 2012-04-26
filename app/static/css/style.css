@@ -123,12 +123,13 @@ h1 a:active {
 	text-align: center;
 }
 
-#subheadings div a {
+#mainHeader:hover{color:inherit;}
+a {
 	color: inherit;
 	text-decoration: none;
 }
 
-#subheadings div a:hover {
+a:hover {
 	color: #FF0700;
 }
 
@@ -160,7 +161,7 @@ h1 a:active {
   margin-left: auto;
 	margin-right: auto;
 }
-
+.addCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .removeCmd{
   -webkit-border-radius: 4px;
 	-moz-border-radius: 4px;
@@ -174,7 +175,7 @@ h1 a:active {
   margin-left: auto;
 	margin-right: auto;
 }
-
+.removeCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .editCmd{
   font: 12px Arial;
 	-webkit-border-radius: 4px;
@@ -186,13 +187,14 @@ h1 a:active {
 	font-weight:bold;
   width:20px;
 }
+.editCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .addButton{
 	height: 20px;
 	width: 20px;
 	background: url(../site_imgs/add-button.png) no-repeat center center;
 	position: relative;
 	opacity: 80;
-  cursor:pointer;
+  cursor: hand; cursor: pointer;
 }
 
 .circleLabelSmall{
@@ -227,6 +229,15 @@ h1 a:active {
   background:#E0725C;
   float:left;}
 
+input[type="button"]{background-color:#E0725C; font-weight:bold; color:white;border: 0;}
+input[type="button"]:hover, input[type="button"]:active{background-color: #FF0700; cursor: hand; cursor: pointer;}
+input[type="button"][disabled] {
+  background-color: #616161; 
+  cursor: inherit;
+}
+
+.dividerDiv{position:absolute;left:50%;top:7%;bottom:7%;border-left:3px solid #E0725C;}
+.loginLabel{font-size:15px; color:#496B50; font-weight:bold;}
 
 .tableInput{margin-left:35px;}
 .tdSpacing{padding-top:0px;}

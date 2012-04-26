@@ -2,7 +2,7 @@
 
 <html>
 <head>
-<title>Gladomus: Internet via SMS</title>
+<title>Gladomus: Internet browsing through SMS</title>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/colorbox.css') }}">
 <link href='http://fonts.googleapis.com/css?family=Jockey+One' rel='stylesheet' type='text/css'>
@@ -23,8 +23,6 @@ $(document).ready(function() {
         function(data){
           console.log(data);
           if ('error' in data){
-            // TODO: swap this out for a flashed message
-            //alert(data.error)
             $('#loginError').html(data.error);
             $('#loginError').show();
           }
@@ -53,20 +51,23 @@ $(document).ready(function() {
             <span class="orange">
             {{session['free']}} free/{{session['free']}} paid msgs
             </span>
-            {{ session['number'] }}
+            <a href="/">{{ session['number'] }}</a>
             <a href="{{ url_for('logout') }}">log out</a>
           </div>
           {% endif %}
           <div style="float:left;">
-            <h1><a href="/">Gladomus</a></h1>
+            <h1><a href="/" id="mainHeader">Textatron<span style="font-size:13px; font-weight:bold;"> beta</span></a></h1>
             <div class="navArrow" id="mainArrow" style="margin-left:90px; margin-top:-10px; display:none;"></div>
           </div>
           <div id="subheadings" style="float:right;">
+            <div style="margin-right:20px; float:left; width:200px">
+              <span class="dblue" style="font-size:18px; font-weight:bold;">(1)919-666-3455</span>
+            </div>
             <div style="margin-right:20px; float:left; width:120px;">
               <a href="{{ url_for('commands') }}">commands</a>
               <div class="navArrow" id="commandsArrow" style="margin-left:35px; margin-top:5px; display:none;"></div>
             </div>
-            <div style="margin-right:330px; float:left; width:150px;">
+            <div style="margin-right:170px; float:left; width:150px;">
               <a href="{{ url_for('createCommands') }}">create a command</a>
               <div class="navArrow" id="createArrow" style="margin-left:60px; margin-top:5px; display:none;"></div>
             </div>

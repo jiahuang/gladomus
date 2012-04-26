@@ -6,30 +6,39 @@ def makeUser():
   user = db.Users()
   user.number = u'+19193971139'
   user.email = u'jialiya.huang0@gmail.com'
-  user.active = datetime.datetime.utcnow() + datetime.timedelta(days=5)
   req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
   user.requests = [req]
+  user.freeMsg = 10000
+  user.pw = bcrypt.hashpw('123qwe', bcrypt.gensalt()).decode()
+  user.save()
+
+  user = db.Users()
+  user.number = unicode(TWILIO_NUM)
+  user.email = u'jialiya.huang0@gmail.com'
+  req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
+  user.requests = [req]
+  user.freeMsg = 10000
   user.pw = bcrypt.hashpw('123qwe', bcrypt.gensalt()).decode()
   user.save()
       
 def populateGlobals():
   # populate global commands table
-  cmds = ['mapw', 'mapd', 'mapp', 'wiki', 'more', 'call', 'newpw', 'signup']
+  cmds = ['mapw', 'mapd', 'mapp', 'wiki', 'more', 'newpw', 'signup']
   descrip = ['Gives walking directions', 'Gives driving directions', 'Gives public transit directions at a certain arrival or departure time',
   'Returns wikipedia information on particular articles',
   'If any results are more than 4 texts long, the more command sends the next part of the result',
-  'Calls your phone in x minutes', 'Resets your password', 'Signs you up for Gladomus']
+  'Resets your password', 'Signs you up for Gladomus']
   switches = [[{'switch':u's', 'default': u'','description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'}],
   [{'switch':u's', 'default':u'', 'description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'}],
   [{'switch':u's', 'default':u'', 'description':u'starting location'}, {'switch':u'e', 'default':u'', 'description':u'ending location'},
   {'switch':u'a', 'default':u'', 'description':u'arrival time. (1:00PM, 13:00)'}, {'switch':u'd', 'default':u'', 'description':u'departure time. (1:00PM, 13:00)'}], 
   [{'switch':u'a', 'default':u'', 'description':u'article'},
   {'switch':u's', 'default':u'summary', 'description':u'section of the article. Can specify "toc" to get the table of contents. Can be the section number in the table of contents or the heading. '}],
-  [], [], [], []]
+  [], [], []]
   examples = ['map w s.Microsoft Building 84, WA e.Microsoft Building 26, WA',
   'map d s.Microsoft Building 84, WA e.Microsoft Building 26, WA', 'map p s.Microsoft Building 84, WA e.400 Broad St. Seattle, WA d.4:00pm',
   'wiki a.rabbits, wiki a.rabbits s.toc, wiki a.rabbits s.10.1, wiki a.rabbits s.habitat and range',
-  'more', 'call 5', 'newpw', 'signup']
+  'more', 'newpw', 'signup']
   
   owner = db.Users.find_one({'number':'+19193971139'})
   for i in xrange(len(cmds)):
@@ -37,6 +46,7 @@ def populateGlobals():
     custom.cmd = unicode(cmds[i])
     custom.description = unicode(descrip[i])
     custom.isGlobal = True
+    custom.tested = True
     custom.owner = owner._id
     custom.switches = switches[i]
     custom.example = unicode(examples[i])
@@ -83,6 +93,7 @@ def populateCustom():
     custom.switches = switches[i] 
     custom.includes = includes[i]
     custom.excludes = excludes[i]
+    custom.tested = True
     custom.owner = owner._id
     custom.url = urls[i]
     custom.enumerate = enumerates[i]

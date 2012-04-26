@@ -33,10 +33,8 @@ app.config.from_object(__name__)
 ########################################################################
 # Helper functions
 ########################################################################
-def addAsGladomusCmd(cmd):
-  user = db.User.find_one({'number':TWILIO_NUM})
-  user.cmds.append(cmd._id)
-  user.save()
+def getDefaultUser():
+  return db.Users.find_one({'number':TWILIO_NUM})
   
 def getUser():
   if 'logged_in' in session and session['logged_in'] == True: 
@@ -108,35 +106,35 @@ def commandsAjax():
       if sortByList[sortQuery] == 'added' and user:
         # sort by commands user has added
         userCmds = user.cmds
-        cmdList = list(db.Commands.find({'_keywords':search, '_id':{'$in':userCmds}}))
-        altList = list(db.Commands.find({'_keywords':search, '_id':{'$nin':userCmds}}))
+        cmdList = list(db.Commands.find({'tested':True, '_keywords':search, '_id':{'$in':userCmds}}))
+        altList = list(db.Commands.find({'tested':True, '_keywords':search, '_id':{'$nin':userCmds}}))
         if order == pymongo.DESCENDING: cmdList = cmdList + altList
         else: cmdList = altList + cmdList
-        cmdList = cmdList + list(db.Commands.find({'_keywords':search, '_id':{'$nin':userCmds}}))
+        cmdList = cmdList + list(db.Commands.find({'tested':True, '_keywords':search, '_id':{'$nin':userCmds}}))
         isCursor = False
         cmdList = cmdList[(page-1)*20:page*20]
       elif sortByList[sortQuery] != 'added':
-        cmdList = db.Commands.find({'_keywords':search}).sort(sortByList[sortQuery], order).skip((page-1)*20).limit(20)
+        cmdList = db.Commands.find({'tested':True, '_keywords':search}).sort(sortByList[sortQuery], order).skip((page-1)*20).limit(20)
     else:
-      cmdList = db.Commands.find({'_keywords':search}).skip((page-1)*20).limit(20)
+      cmdList = db.Commands.find({'tested':True, '_keywords':search}).skip((page-1)*20).limit(20)
   else:
     if sortQuery >= 0:
       if sortByList[sortQuery] == 'added' and user:
         # sort by commands user has added
         userCmds = user.cmds
-        cmdList = list(db.Commands.find({'_id':{'$in':userCmds}}))
-        altList = list(db.Commands.find({'_id':{'$nin':userCmds}}))
+        cmdList = list(db.Commands.find({'tested':True, '_id':{'$in':userCmds}}))
+        altList = list(db.Commands.find({'tested':True, '_id':{'$nin':userCmds}}))
         if order == pymongo.DESCENDING: cmdList = cmdList + altList
         else: cmdList = altList + cmdList
         cmdList = cmdList[(page-1)*20:page*20]
         isCursor = False
       elif sortByList[sortQuery] != 'added':
-        cmdList = db.Commands.find().sort(sortByList[sortQuery], order).skip((page-1)*20).limit(20)
+        cmdList = db.Commands.find({'tested':True}).sort(sortByList[sortQuery], order).skip((page-1)*20).limit(20)
    
   if cmdList == None:
-    globalCmds = list(db.Commands.find({'isGlobal':True}))
+    globalCmds = list(db.Commands.find({'tested':True,'isGlobal':True}))
     # find by most recently updated
-    cmdList = globalCmds + list(db.Commands.find({'isGlobal':False}).sort('dateUpdated', order).limit(20))
+    cmdList = globalCmds + list(db.Commands.find({'tested':True, 'isGlobal':False}).sort('dateUpdated', order).limit(20))
     cmdList = cmdList[(page-1)*20:page*20]
     isCursor = False
   return jsonCmd_res(cmdList, isCursor)
@@ -144,10 +142,6 @@ def commandsAjax():
 @app.route('/error')
 def error(error_msg):
   return render_template("error.html", error = error_msg)
-
-@app.route('/hangup', methods=["POST"])
-def hangup():
-  return json_res({'success': 'hit hangup'})
 
 @app.route('/requests', methods=["POST"])
 def requests():
@@ -161,7 +155,7 @@ def requests():
   user = db.users.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
 
-  com = Commander('gladomus', fromNumber)
+  com = Commander(fromNumber, 'gladomus')
   # if command is reset password
   if msg == 'newpw':
     if user:
@@ -181,21 +175,21 @@ def requests():
       user.requests = [req]
       user.save()
       pw = autoPw(fromNumber)
-      com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
+      #com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
     else:
       db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
-    log('access', "REACHED: db updated")
-    Commander(msg, fromNumber).start()
+    log('access', "REACHED: new request "+msg+" from "+fromNumber)
+    Commander(fromNumber, msg).start()
   else:
     # they need to pay
     db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: Need to pay "+fromNumber)
-    com.processMsg("You have used up your Gladomus calls/texts. Please subscribe at www.gladomus.com", False, False)
+    com.processMsg("You have used up your texts. Please subscribe at www.textatron.com", False, False)
   
   return json_res({'success': 'hit requests'})
 
 @app.route('/pay', methods=['POST'])
-def oliners():
+def pay():
   # send payments off to amazon
   return json_res({'success':"Your order has been successfully processed."})
 
@@ -203,15 +197,61 @@ def oliners():
 def updateUser():
   # allows users to update their pw, email, and number
 
-  return json_res({'success': _+'was updated successfully'})
+  return json_res({'success': 'Your account was updated successfully'})
   
 @app.route('/logout', methods=['GET'])
 def logout():
   session.pop('logged_in', None)
   session.pop('uid', "")
   session.pop('number', "")
-  flash('You were logged out')
+  if "cmd" in session:
+    session.pop('cmd', "")
+  #flash('You were logged out')
   return redirect(url_for('main'))
+
+@app.route('/createCommands/test', methods=['POST'])
+def testCommand():
+  # sets up fake command
+  try:
+    inputCmd = json.loads(request.form.get('cmd', ''))
+    #print inputCmd
+    # make sure user doesn't already have this command
+    user = getUser()
+    if user:
+      #return json_res({'error': 'Error: You must be logged in to create a command'})
+      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
+      for userCmd in userCmds:
+        if userCmd['cmd'] == inputCmd['cmd'].lower():
+          if not userCmd['cmd']['tested']:
+            # delete the old tested command
+            db.Commands.remove({'_id':userCmd['cmd']['_id']})
+          else:
+            return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
+    else:
+      user = getDefaultUser()
+        
+    postCmd = db.Commands()
+    postCmd.cmd = inputCmd['cmd'].lower()
+    postCmd.url = inputCmd['url'] # TODO: make sure this url is clean
+    postCmd.description = inputCmd['description']
+    postCmd.example = inputCmd['example']
+    postCmd.enumerate = inputCmd['enumerate']
+    postCmd.switches = inputCmd['switches']
+    postCmd.includes = inputCmd['includes']
+    postCmd.excludes = inputCmd['excludes']
+    postCmd.owner = user._id
+    postCmd.save()
+    user.cmds.append(postCmd._id)
+    user.save()
+    
+    session['cmd'] = postCmd._id #keep track of which command we saved
+    #print postCmd._id
+    com = Commander(user.number, 'gladomus')
+    res = com.customCommandHelper(postCmd._id, postCmd.example)
+  except:
+    return json_res({'error': 'Error: the command could not be tested. Make sure all the fields are properly formatted. Extended output:'+str(sys.exc_info())})
+  # returns results
+  return json_res(res)
 
 @app.route('/createCommands/add/<cmdId>', methods=['POST'])
 def addCommand(cmdId):
@@ -260,12 +300,12 @@ def editCommand(cmdId):
       newCmd.save()
       GLADOMUS_USER.cmds.append(newCmd._id)
       GLADOMUS_USER.save()
-    flash('Successfully added your command')
+    #flash('Successfully added your command')
     return redirect(url_for('commands'))
   # GET
   if not cmd:
     # flash error
-    flash('Error: We could not find that command')
+    #flash('Error: We could not find that command')
     return render_template('createCommands.html') 
   # command was found
   return render_template('createCommands.html', cmd=cmd)
@@ -279,12 +319,11 @@ def createCommands():
       print inputCmd
       # make sure user doesn't already have this command
       user = getUser()
-      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
-      for userCmd in userCmds:
-        if userCmd['cmd'] == inputCmd['cmd'].lower():
-          return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
-          
-      postCmd = db.Commands()
+      #userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
+      #for userCmd in userCmds:
+      #  if userCmd['cmd'] == inputCmd['cmd'].lower():
+      #    return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
+      '''postCmd = db.Commands()
       postCmd.cmd = inputCmd['cmd'].lower()
       postCmd.url = inputCmd['url'] # TODO: make sure this url is clean
       postCmd.description = inputCmd['description']
@@ -294,9 +333,20 @@ def createCommands():
       postCmd.includes = inputCmd['includes']
       postCmd.excludes = inputCmd['excludes']
       postCmd.owner = user._id
-      postCmd.save()
-      user.cmds.append(postCmd._id)
-      user.save()
+      postCmd.save()'''    
+      # check that the user has a tested cmd
+      if "cmd" not in session:
+        return json_res({'error': 'Error: you must test your command first.'})
+      cmd = db.Commands.find_one({'_id':session['cmd']})
+      if not cmd or len(inputCmd) < 8:
+        return json_res({'error': 'Error: you must test your command first.'})
+      # check to make sure that the tested command is the same as the one they are submitting
+      for key in inputCmd:
+        if cmd[key] != inputCmd[key]:
+          return json_res({'error': 'Error: you must test your command first.'})
+      cmd.tested = True
+      cmd.save()
+      session.pop('cmd','') 
     except:
       return json_res({'error': 'Error: the command could not be created. '+str(sys.exc_info()[0])})
     
@@ -354,7 +404,10 @@ def login():
 
 @app.route('/', methods=['GET'])
 def main():
-  return render_template('main.html')
+  if "logged_in" in session and session['logged_in']:
+    return render_template('settings.html')
+  else:
+    return render_template('main.html')
 
 @app.route('/commands', methods=['GET'])
 def commands():

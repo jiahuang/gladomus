@@ -268,10 +268,10 @@ class Commander(Thread):
           msg = msg + str(num)+". "+i["directions"]+i["distance"]+' '
           num = num +1
         self.processMsg(msg)
-    elif cmdHeader == "call":
-      res = self.callCommand(cmd)
-      if "error" in res:
-        self.processMsg(res["error"])
+    #elif cmdHeader == "call":
+    #  res = self.callCommand(cmd)
+    #  if "error" in res:
+    #    self.processMsg(res["error"])
     elif cmdHeader == 'wiki':
       res = self.wikiCommand(cmd)
       if "error" in res:
@@ -280,6 +280,8 @@ class Commander(Thread):
         self.processMsg(res['success'])
     else:
       res = self.performCustomCommand(cmd)
+      if isTest:
+          return res 
       if "error" in res:
         self.processMsg(res["error"])
       else:
@@ -288,12 +290,12 @@ class Commander(Thread):
   def performCustomCommand(self, cmd):
     cmdHeader = cmd.split(' ')[0]
     # look through custom commands
-    customCmds = db.Commands.find({'cmd':cmdHeader}, {'_id':1}) #only returns ids
+    customCmds = db.Commands.find({'tested':True, 'cmd':cmdHeader}, {'_id':1})
     user = db.Users.find_one({'number':self.num})
-
+    
     if customCmds.count() == 0:
       # if no results, error out
-      return {'error':cmdHeader+' command not found. Go to www.gladomus.com/commands for a list of commands'} #TODO: add suggestions module?
+      return {'error':cmdHeader+' command not found. Go to www.texatron.com/commands for a list of commands'} #TODO: add suggestions module?
     elif customCmds.count() == 1:
       # if only one custom command returns and user doesnt have that command on their list, add it
       if customCmds[0]._id not in user.cmds:
@@ -302,14 +304,17 @@ class Commander(Thread):
       return self.customCommandHelper(customCmds[0]['_id'], cmd)
     # if more than one returns, check user's list
     elif customCmds.count() > 1:
-      matchCmds = [uCmd['_id'] for uCmd in user.cmds if uCmd in customCmds]
+      customList = [ obj['_id'] for obj in list(customCmds)]
+      matchCmds = [uCmd for uCmd in user.cmds if uCmd in customList]
+      #print matchCmds
       # if more than one appears error out
       if len(matchCmds) > 1:
-        return {'error': cmdHeader+' has multiple custom commands. Please go to www.gladomus.com and select one'} #TODO: make it so you can select one from texting 
+        return {'error': cmdHeader+' has multiple custom commands. Please go to www.texatron.com and select one'} #TODO: make it so you can select one from texting 
       else:
         return self.customCommandHelper(matchCmds[0], cmd)
 
   def customCommandHelper(self, cmdId, userCmd):
+    print "custom"
     cmd = db.Commands.find_one({'_id':cmdId})
     # parse out userCmd according to switch operators
     if len(cmd.switches) > 0:
@@ -340,10 +345,10 @@ class Commander(Thread):
       url = cmd.url
       #put together url with switches
       for s in switches:
-        newUrl = url.replace('{'+s['s'][:-1]+'}', s['data'])
+        newUrl = url.replace('{'+s['s'][:-1]+'.}', s['data'])
         if newUrl == url:
           # something went wrong. a command didnt get replaced
-          return {'error':"Error:couldn't find switch"+s['s']+""}
+          return {'error':"Error:couldn't find switch "+s['s']+""}
         else:
           url = newUrl
     else:
@@ -352,7 +357,7 @@ class Commander(Thread):
     print url
     try:
       request = urllib2.Request(url)
-      request.add_header("User-Agent", 'Gladomus/0.1')
+      request.add_header("User-Agent", 'Texatron/0.1')
       raw = urllib2.urlopen(request)
       soup = BeautifulSoup(raw)
       # parse soup according to includes
@@ -372,7 +377,6 @@ class Commander(Thread):
           count = count + 1
       else:
         msg = ''.join(text)
-        
       return {'success':msg}
     except urllib2.HTTPError, e:
       return {"error": "HTTP error: %d" % e.code}
@@ -387,7 +391,7 @@ class Commander(Thread):
       for match in i['matches']:
         matchDict[match['type']] = re.compile(r'\b%s\b'%match['value'])
       found = soup.findAll(i['tag'], matchDict)
-
+      
       for f in found:
         foundText = foundText + f.findAll(text=True)
     return foundText
