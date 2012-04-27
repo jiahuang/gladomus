@@ -19,20 +19,20 @@ $(document).ready(function() {
     return tr;
   }
 
-  $('.hoverDelete').live("mouseenter mouseleave", function() {
+  /*$('.hoverDelete').live("mouseenter mouseleave", function() {
     var delButton = $(this).find($('.deleteButton')).first();
     delButton.toggle();
-  });
+  });*/
 
-  $('.deleteButton').live('click', function(){
+  $('.removeCmd').live('click', function(){
     // remove entire row
     $(this).parent().parent().remove();
   });
     
-  $('.addButton').live('click', function(){
+  $('.addCmd').live('click', function(){
     // insert new row to parent table
     var type = $(this).attr('type')
-    var tr = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addButton').attr('type', $(this).attr('type'))));
+    var tr = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addCmd').attr('type', $(this).attr('type')).html('+')));
     var parentTbl = $(this).parent().parent().parent().parent();
     console.log(type);
     if (type == "switch"){
@@ -49,7 +49,7 @@ $(document).ready(function() {
     else if (type=='outer'){
       tr = createTableLabel(tr, 'Tag', true, '35px');
       var childTbl = $('<table>');
-      var childRow = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addButton').attr('type', 'inner')));;
+      var childRow = $('<tr>').append($('<td>').append($('<div>').attr('class', 'addCmd').attr('type', 'inner').html('+')));;
       childRow = createTableLabel(childRow, 'Attribute', true);
       childRow = createTableLabel(childRow, 'Value', true, '40px');
       childTbl.append(childRow);
@@ -57,8 +57,8 @@ $(document).ready(function() {
       parentTbl.append(tr);
     }
     
-    $(this).parent().append($('<div>').attr('class', 'deleteButton'));
-    $(this).parent().parent().attr('class', 'hoverDelete'); // parent row 
+    $(this).parent().append($('<div>').attr('class', 'removeCmd').html('x'));
+    //$(this).parent().parent().attr('class', 'hoverDelete'); // parent row 
     // remove self
     $(this).remove();
   });
@@ -110,23 +110,47 @@ $(document).ready(function() {
   }
 
   $('#submit').click(function(){
-    postCommand('/createCommands/new');
+    postCommand('/createCommands/new', function(data){
+      if ("error" in data){
+        $('#saveReady').val(data['error']);
+        $('#saveReady').addClass('red');
+        $('#saveReady').html("There are some errors in your test command and we couldn't execute it.");
+      }
+      else if ("success" in data){
+        $('#saveReady').val(data['success']);
+        $('#saveReady').removeClass('red');
+      }
+    });
   });
 
   $('#testButton').click(function(){
+    var THIS = $(this);
+    THIS.attr('disabled', 'disabled');
+    $('#testOutput').val('Please wait as we execute the command...');
+    $('#testOutput').removeClass('red');
     postCommand('/createCommands/test', function(data){
       console.log(data)
+      THIS.attr('disabled', false);
       if ("error" in data){
         $('#testOutput').val(data['error']);
         $('#testOutput').addClass('red');
-        $('#saveReady').html("Looks like there are some errors in your command. Fix them before saving.");
+        $('#saveReady').html("There are some errors in your test command and we couldn't execute it. Fix them before saving.");
         $('#submit').attr('disabled', 'disabled');
       }
       else if ("success" in data){
-        $('#testOutput').val('Success: '+data['success']);
-        $('#testOutput').removeClass('red');
-        $('#saveReady').html("Everything looks good? Awesome, save it.");
-        $('#submit').attr('disabled', false);
+        if (data['success'] == ''){
+          $('#testOutput').val(data['error']);
+          $('#testOutput').addClass('red');
+          $('#testOutput').html("We were able to execute the command but we didn't get any results. Double check the includes and excludes.");
+          $('#saveReady').html("There are some errors in your test command and we couldn't execute it. Fix them before saving.");
+          $('#submit').attr('disabled', 'disabled');
+        }
+        else{
+          $('#testOutput').val(data['success']);
+          $('#testOutput').removeClass('red');
+          $('#saveReady').html("Everything looks good? Awesome, save it.");
+          $('#submit').attr('disabled', false);
+        }
       } 
       });
   });
@@ -159,6 +183,16 @@ $(document).ready(function() {
     revertToExample($(this));
   });
 
+  $('.more').click(function(){
+    if ($(this).html() == 'more'){
+      $(this).html('less');
+      $(this).next().show();
+    }
+    else{
+      $(this).html('more');
+      $(this).next().hide();
+    }
+  });
   // nav arrow
   $('.navArrow').hide();
   $('#createArrow').show();
@@ -177,19 +211,22 @@ $(document).ready(function() {
       <td width="80px;"><div class="createLabel">Command</div></td>
       <td width="130px;"><input type="text" id="cmdInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: reddit" value="{%if cmd is defined%}{{cmd.cmd}}{%endif%}"/></td>
       <td width="150px;"><div class="createLabel" style="width:150px; text-align:right;">Enumerate Results</div></td>
-      <td width="400px;"><input type="checkbox" id="enumerateInput" class="createInput"/></td>
+      <td width="400px;"><input type="checkbox" id="enumerateInput" class="createInput" {%if cmd is defined and cmd.enumerate%}checked{%endif%}/></td>
     </tr>
   </table>
   <div class="circleDiv">
     <div class="circleLabelSmall">2</div>
-    <div class="circleLabelText">Specify the url. If there are parameters in the url, specify the switch letter and wrap them with {}</div>
+    <div class="circleLabelText">Specify the url. If there are parameters in the url, specify the switch letter and wrap them with {} <span class="more dgreen">more</span>
+      <div class="moreHelp dgray">Switches are one letter long and allow the url to change based off of user input. In the example given, the "s" switch can switch between subreddits.
+      The default value is what the url will default to if the user texts the command without providing a switch. Switches and default values are optional.</div>
+    </div>
     <div class="clear"></div>
   </div>
   <table class="tableInput">
     <tr>
       <td width="30px;" class="tdSpacing"><div class="createLabel">Url</div></td>
       <td  class="tdSpacing"><input type="text" id="urlInput" style="width:630px;"
-        class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: http://www.reddit.com/r/{s.}" value="{%if cmd is defined%}{{cmd.url}}{%endif%}"/></td>
+        class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: http://www.reddit.com/r/{s}" value="{%if cmd is defined%}{{cmd.url}}{%endif%}"/></td>
     </tr>
     <tr>
       <td class="tdSpacing"><div class="createLabel">Switches</div></td>
@@ -201,7 +238,7 @@ $(document).ready(function() {
           {%if cmd is defined and cmd.switches|length > 0%}
             {%for switch in cmd.switches%}
               <tr>
-              <td>{%if loop.last%}<div class="addButton" type="switch">{%endif%}</div></td>
+              <td>{%if loop.last%}<div class="addCmd" type="switch">+</div>{%endif%}</td>
               <td><div class="createLabelInner">Switch</div></td>
               <td><input type="text" class="createInput" value="{{switch.switch}}"/></td>
               <td><div class="createLabelInner" style="width:75px;">Description</div></td>
@@ -212,7 +249,7 @@ $(document).ready(function() {
             {%endfor%}
           {%else%}
             <tr>
-            <td><div class="addButton" type="switch"></div></td>
+            <td><div class="addCmd" type="switch">+</div></td>
             <td><div class="createLabelInner">Switch</div></td>
             <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: s" value=""/></td>
             <td><div class="createLabelInner" style="width:75px;">Description</div></td>
@@ -228,7 +265,11 @@ $(document).ready(function() {
     </table>
     <div class="circleDiv">
       <div class="circleLabelSmall">3</div>
-      <div class="circleLabelText">Specify which elements of the url you would like to have in your results</div>
+      <div class="circleLabelText">Specify which elements of the url you would like to have in your results. <span class="more dgreen">more</span>
+      <div class="moreHelp dgray">Name the elements (div, span, a, etc), attributes that those elements have
+      (class, style, id), and what values those attributes have. Leaving this blank will return the entire page.
+      Right now we only support html and plaintext. JSON support is coming soon.</div>
+      </div>
       <div class="clear"></div>
     </div>
     <table class="tableInput">
@@ -242,14 +283,14 @@ $(document).ready(function() {
           {%if cmd is defined and cmd.includes|length > 0%}
             {%for include in cmd.includes%}
               <tr>
-                <td>{%if loop.last%}<div class="addButton" type="outer"></div>{%endif%}</td>
+                <td>{%if loop.last%}<div class="addCmd" type="outer">+</div>{%endif%}</td>
                 <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
                 <td><input type="text" class="createInput" value="{{include.tag}}"/></td>
                 <td>
                   <table>
                     {%for match in include.matches%}
                       <tr>
-                      <td>{%if loop.last%}<div class="addButton" type="inner">{%endif%}</div></td>
+                      <td>{%if loop.last%}<div class="addCmd" type="inner">+</div>{%endif%}</td>
                       <td><div class="createLabelInner">Attribute</div></td>
                       <td><input type="text" class="createInput tagInner" value="{{match.type}}"/></td>
                       <td><div class="createLabelInner" style="width:40px;">Value</div></td>
@@ -262,13 +303,13 @@ $(document).ready(function() {
             {%endfor%}
           {%else%}
           <tr>
-            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="addCmd" type="outer">+</div></td>
             <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
             <td><input type="text" class="createInput exampleDisplay" exampleInput="example: a" value=""/></td>
             <td>
               <table>
                 <tr>
-                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="addCmd" type="inner">+</div></td>
                 <td><div class="createLabelInner">Attribute</div></td>
                 <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
                 <td><div class="createLabelInner" style="width:40px;">Value</div></td>
@@ -299,14 +340,14 @@ $(document).ready(function() {
           {%if cmd is defined and cmd.excludes|length > 0%}
             {%for exclude in cmd.excludes%}
               <tr>
-                <td>{%if loop.last%}<div class="addButton" type="outer"></div>{%endif%}</td>
+                <td>{%if loop.last%}<div class="addCmd" type="outer">+</div>{%endif%}</td>
                 <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
                 <td><input type="text" class="createInput" value="{{exclude.tag}}"/></td>
                 <td>
                   <table>
                     {%for match in exclude.matches%}
                       <tr>
-                      <td>{%if loop.last%}<div class="addButton" type="inner">{%endif%}</div></td>
+                      <td>{%if loop.last%}<div class="addCmd" type="inner">+</div>{%endif%}</td>
                       <td><div class="createLabelInner">Attribute</div></td>
                       <td><input type="text" class="createInput tagInner" value="{{match.type}}"/></td>
                       <td><div class="createLabelInner" style="width:40px;">Value</div></td>
@@ -319,17 +360,17 @@ $(document).ready(function() {
             {%endfor%}
           {%else%}
           <tr>
-            <td><div class="addButton" type="outer"></div></td>
+            <td><div class="addCmd" type="outer">+</div></td>
             <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
             <td><input type="text" class="createInput exampleDisplay" exampleInput="example: div" value=""/></td>
             <td>
               <table>
                 <tr>
-                <td><div class="addButton" type="inner"></div></td>
+                <td><div class="addCmd" type="inner">+</div></td>
                 <td><div class="createLabelInner">Attribute</div></td>
                 <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
                 <td><div class="createLabelInner" style="width:40px;">Value</div></td>
-                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: unvoted" value=""/></td>
+                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: promotedlink" value=""/></td>
                 </tr>
               </table>
             </td>
@@ -342,7 +383,9 @@ $(document).ready(function() {
     </table>
     <div class="circleDiv">
       <div class="circleLabelSmall">5</div>
-      <div class="circleLabelText">Give others a description of what your command does and an example usage</div>
+      <div class="circleLabelText">Give others a description of what your command does and an example usage. <span class="more dgreen">more</span>
+      <div class="moreHelp dgray">The example is what you will text in order to use the command. If you have any switches, you must add a "." after the switch.</div>
+      </div>
       <div class="clear"></div>
     </div>
     <table class="tableInput">

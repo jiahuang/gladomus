@@ -165,26 +165,26 @@ def requests():
       com.processMsg("You do not have a Gladomus account. Text 'signup' to signup for Gladomus.", False, False)
     return json_res({'success': 'new pw hit'})
 
-  if not user or user['active'] >= currDate or len(user['requests']) <= 10:
+  if not user or (user['freeMsg'] < 1 and user['paidMsg'] < 1) :
     # add it to cmd queue and add it to numbers collection
     if not user:
       # new user, auto generate pw and text them
       user = db.Users()
       user.number = fromNumber
-      user.active = currDate
       user.requests = [req]
       user.save()
       pw = autoPw(fromNumber)
       #com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
     else:
       db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
+      
     log('access', "REACHED: new request "+msg+" from "+fromNumber)
     Commander(fromNumber, msg).start()
   else:
     # they need to pay
     db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: Need to pay "+fromNumber)
-    com.processMsg("You have used up your texts. Please subscribe at www.textatron.com", False, False)
+    com.processMsg("You have used up your texts. Add more at www.textatron.com", False, False)
   
   return json_res({'success': 'hit requests'})
 
@@ -214,22 +214,24 @@ def testCommand():
   # sets up fake command
   try:
     inputCmd = json.loads(request.form.get('cmd', ''))
+    
     #print inputCmd
     # make sure user doesn't already have this command
     user = getUser()
     if user:
       #return json_res({'error': 'Error: You must be logged in to create a command'})
-      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
+      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1, 'tested':1}))
+      print userCmds
       for userCmd in userCmds:
         if userCmd['cmd'] == inputCmd['cmd'].lower():
-          if not userCmd['cmd']['tested']:
+          if not userCmd['tested']:
             # delete the old tested command
             db.Commands.remove({'_id':userCmd['cmd']['_id']})
           else:
             return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
     else:
       user = getDefaultUser()
-        
+    
     postCmd = db.Commands()
     postCmd.cmd = inputCmd['cmd'].lower()
     postCmd.url = inputCmd['url'] # TODO: make sure this url is clean

@@ -320,6 +320,7 @@ class Commander(Thread):
     if len(cmd.switches) > 0:
       # there are switches, parse them
       #switchLocs = [s for s in cmd.switches]
+      
       switchLocs = []
       switches = []
       for s in cmd.switches:
@@ -345,7 +346,7 @@ class Commander(Thread):
       url = cmd.url
       #put together url with switches
       for s in switches:
-        newUrl = url.replace('{'+s['s'][:-1]+'.}', s['data'])
+        newUrl = url.replace('{'+s['s'][:-1]+'}', s['data'])
         if newUrl == url:
           # something went wrong. a command didnt get replaced
           return {'error':"Error:couldn't find switch "+s['s']+""}
@@ -423,6 +424,14 @@ class Commander(Thread):
     
     i = 0
     while i*160 < len(msg) and i<MAX_TEXTS:
+      if user.freeMsg > 0:
+        user.freeMsg = user.freeMsg - 1
+      elif user.paidMsg > 0:
+        user.paidMsg = user.paidMsg - 1
+      else:
+        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = "You have used up your texts. Buy more at www.textatron.com")
+        break;
+        
       if i+1 >= MAX_TEXTS and len(msg) > (i+1)*160:
         CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
         #print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
@@ -432,6 +441,8 @@ class Commander(Thread):
       else:
         CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:])
         #print self.msg[i*160:]
+      user = db.Users.find({'number':self.num})
+      
       i = i + 1
       #sleep 1.5 seconds
       if i < len(msg):

@@ -10,6 +10,7 @@
 .dblue {color:#00456B;}
 .lblue {color:#CEE5F5;}
 .red {color:#92140C;}
+.dgray{color:#454545;}
 
 .clear{clear:both;}
 .center{margin-left:auto; margin-right:auto;}
@@ -139,41 +140,63 @@ a:hover {
   background:url(../site_imgs/ajax-loader.gif);
 }
 
+.upArrow {
+	width: 0;
+	height: 0;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+  float:left;
+	border-bottom: 10px solid #8C8E8F;
+}
+.upArrow:hover{border-bottom: 10px solid #FF0700; cursor: hand; cursor: pointer;}
+.downArrow {
+	width: 0;
+	height: 0;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+  float:left;
+	border-top: 10px solid #8C8E8F;
+}
+.downArrow:hover{border-top: 10px solid #FF0700; cursor: hand; cursor: pointer;}
 .deleteButton{
 	height: 20px;
 	width: 20px;
 	background: url(../site_imgs/close-button.png) no-repeat center center;
 	position: relative;
-  display:none;
   opacity: 80;
 }
 
 .addCmd{
-  font: 12px Arial;
-	-webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-	background-color: #8C8E8F; /*#c4c4c4;*/
-	color: white;
-	padding: 2px 5px;
-	font-weight:bold;
-  width:20px;
-  margin-left: auto;
-	margin-right: auto;
+  width:18px;
+  height:18px;
+  display:block;
+  border-radius:9px;
+  -moz-border-radius:9px;
+  -webkit-border-radius:9px;
+  -khtml-border-radius:9px;
+  font-size:15px;
+  font-weight:bold;
+  color:#fff;
+  line-height:18px;
+  text-align:center;
+  background:#8C8E8F;
 }
+
 .addCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .removeCmd{
-  -webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-	background-color: #92140C;
-	color: white;
-	padding: 2px 5px;
-  font: 12px Arial;
-	font-weight:bold;
-  width:42px;
-  margin-left: auto;
-	margin-right: auto;
+  width:18px;
+  height:18px;
+  display:block;
+  border-radius:9px;
+  -moz-border-radius:9px;
+  -webkit-border-radius:9px;
+  -khtml-border-radius:9px;
+  font-size:12px;
+  font-weight:bold;
+  color:#fff;
+  line-height:18px;
+  text-align:center;
+  background:#92140C;
 }
 .removeCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .editCmd{
@@ -186,6 +209,7 @@ a:hover {
 	padding: 2px 5px;
 	font-weight:bold;
   width:20px;
+  margin-left:10px;
 }
 .editCmd:hover{background-color: #FF0700; cursor: hand; cursor: pointer;}
 .addButton{
@@ -260,6 +284,8 @@ input[type="button"][disabled] {
 .mainText{margin-top:80px;font-size:35px; font-weight:bold; color:#00456B;}
 .mainExampleLabel{margin-top:8px; margin-bottom:5px;font: 15px Arial; color:#295231; font-weight:bold;}
 .mainExample{margin-bottom:5px; margin-left:20px; font:13px Arial; color:#616161; font-weight:bold;}
+.moreHelp{margin-top:5px; display:none;}
+.more:hover{color:#92140C; cursor: hand; cursor: pointer;}
 
 .addDiv{
 	-webkit-border-radius: 4px;

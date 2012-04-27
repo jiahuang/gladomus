@@ -36,7 +36,7 @@ class Users(Document):
   default_values = {
     'email':u'',
     'cmds':[],
-    'freeMsg':10,
+    'freeMsg':20,
     'paidMsg':0,
     'pw':bcrypt.hashpw(generatePw(), bcrypt.gensalt()).decode()
   }

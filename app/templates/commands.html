@@ -53,12 +53,12 @@ $(document).ready(function() {
           if(that.hasClass('addCmd')){
             that.removeClass('addCmd');
             that.addClass('removeCmd');
-            that.text('remove');
+            that.text('x');
           }
           else if (that.hasClass('removeCmd')){
             that.removeClass('removeCmd');
             that.addClass('addCmd');
-            that.text('add');
+            that.text('+');
           }
         },
         'json'
@@ -74,10 +74,10 @@ $(document).ready(function() {
       //console.log(item);
       //console.log(item['id'])
       if (item['added'])
-        var addDiv = $('<td>').append($('<div>').attr('class', 'removeCmd').attr('url', '/createCommands/add/'+item['id']).text('remove')).attr('width', '60px');
+        var addDiv = $('<td>').append($('<div>').attr('class', 'removeCmd').attr('url', '/createCommands/add/'+item['id']).text('x')).attr('width', '10px');
       else
-        var addDiv = $('<td>').append($('<div>').attr('class', 'addCmd').attr('url', '/createCommands/add/'+item['id']).text('add')).attr('width', '60px');
-      var editDiv = $('<td>').append($('<div>').attr('class', 'editCmd').attr('url', '/createCommands/edit/'+item['id']).text('edit')).attr('width', '60px');
+        var addDiv = $('<td>').append($('<div>').attr('class', 'addCmd').attr('url', '/createCommands/add/'+item['id']).text('+')).attr('width', '10px');
+      var editDiv = $('<td>').append($('<div>').attr('class', 'editCmd').attr('url', '/createCommands/edit/'+item['id']).text('edit')).attr('width', '80px');
       var padDiv = $('<td>').attr('width', '30px');
       var switches = $('<table>')
       $.each(item['switches'], function(){
@@ -116,8 +116,13 @@ $(document).ready(function() {
       //rowId++;
 
       if(ADDDIV){
-        tr.prepend(editDiv);
-        tr.prepend(addDiv);
+        if (!item['isGlobal']){
+          tr.prepend(editDiv);
+          tr.prepend(addDiv);
+        }
+        else{
+          tr.prepend($('<td>').attr('width', '120px').attr('colspan', '2'));
+        }
       }
       else{
         tr.prepend(padDiv);
@@ -167,8 +172,8 @@ $(document).ready(function() {
           <table>
             <tr>
               <td><table>
-                <tr><td><div id="addAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
-                <tr><td><div id="addDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+                <tr><td><div id="addAsc" class="upArrow"> </div></td></tr>
+                <tr><td><div id="addDsc" class="downArrow"></div></td></tr>
               </table>
               </td>
               <td><div class="header" style="width:33px; margin-left:auto; margin-right:auto;">Add</div></td>
@@ -180,8 +185,8 @@ $(document).ready(function() {
           <table>
             <tr>
               <td><table>
-                <tr><td><div id="cmdAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
-                <tr><td><div id="cmdDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+                <tr><td><div id="cmdAsc" class="upArrow"> </div></td></tr>
+                <tr><td><div id="cmdDsc" class="downArrow"></div></td></tr>
               </table>
               </td>
               <td><div class="header" style="width:80px;">Command</div></td>
@@ -195,8 +200,8 @@ $(document).ready(function() {
           <table>
             <tr>
               <td><table>
-                <tr><td><div id="dateAsc" style="background-color:yellow; height:10px; width:15px;"> </div></td></tr>
-                <tr><td><div id="dateDsc" style="background-color:red; height:10px; width:15px;"></div></td></tr>
+                <tr><td><div id="dateAsc" class="upArrow"> </div></td></tr>
+                <tr><td><div id="dateDsc" class="downArrow"></div></td></tr>
               </table>
               </td>
               <td><div class="header" style="width:65px; margin-left:auto; margin-right:auto;">Updated</div></td>
