@@ -40,10 +40,10 @@ $(document).ready(function() {
 
 <body>
 <div id="wrap">
-  <div id="header">
+  <div id="header" style="padding-top:30px;">
     <div class="centered">
           {% if not session.logged_in %}
-          <div id="navlinks">
+          <div id="navlinks" style="margin-top:-30px;">
             <a id="login" href="{{ url_for('login') }}">Login / Signup</a>
           </div>
           {% else %}
@@ -55,11 +55,12 @@ $(document).ready(function() {
             <a href="{{ url_for('logout') }}">log out</a>
           </div>
           {% endif %}
-          <div style="float:left;">
-            <h1><a href="/" id="mainHeader">Textatron<span style="font-size:13px; font-weight:bold;"> beta</span></a></h1>
+          <div style="float:left; position:relative;">
+            <h1><a href="/" id="mainHeader"><div class="logo" style="position:absolute; height:50px; width:100px; top:-20px; left:140px;"></div>Textatron<span style="font-size:13px; font-weight:bold;"> alpha</span></a></h1>
+            
             <div class="navArrow" id="mainArrow" style="margin-left:90px; margin-top:-10px; display:none;"></div>
           </div>
-          <div id="subheadings" style="float:right;">
+          <div id="subheadings" style="float:right; margin-top:30px;">
             <div style="margin-right:20px; float:left; width:200px">
               <span class="dblue" style="font-size:18px; font-weight:bold;">(1)919-666-3455</span>
             </div>
