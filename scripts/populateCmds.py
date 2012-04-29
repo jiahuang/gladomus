@@ -9,7 +9,7 @@ def makeUser():
   req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
   user.requests = [req]
   user.freeMsg = 10000
-  user.salt = bcrypt.gensalt()
+  user.salt = unicode(bcrypt.gensalt())
   user.pw = bcrypt.hashpw('123qwe', bcrypt.gensalt()).decode()
   user.save()
 
@@ -19,7 +19,7 @@ def makeUser():
   req = {'time':datetime.datetime.utcnow(), 'msg':u'populate'}
   user.requests = [req]
   user.freeMsg = 10000
-  user.salt = bcrypt.gensalt()
+  user.salt = unicode(bcrypt.gensalt())
   user.pw = bcrypt.hashpw('123qwe', ).decode()
   user.save()
       
