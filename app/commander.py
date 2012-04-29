@@ -301,14 +301,14 @@ class Commander(Thread):
     elif customCmds.count() == 1:
       # if only one custom command returns and user doesnt have that command on their list, add it
       customCmds = list(customCmds)
-      if customCmds[0]._id not in user.cmds:
+      if customCmds[0]._id not in self.user.cmds:
         self.user.cmds.append(customCmds[0]._id)
         self.user.save()
       return self.customCommandHelper(customCmds[0]['_id'], cmd)
     # if more than one returns, check user's list
     elif customCmds.count() > 1:
       customList = [ obj['_id'] for obj in list(customCmds)]
-      matchCmds = [uCmd for uCmd in user.cmds if uCmd in customList]
+      matchCmds = [uCmd for uCmd in self.user.cmds if uCmd in customList]
       #print matchCmds
       # if more than one appears error out
       if len(matchCmds) > 1:
