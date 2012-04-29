@@ -433,7 +433,7 @@ class Commander(Thread):
         self.user.paidMsg = self.user.paidMsg - 1
       else:
         CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = "You have used up your texts. Buy more at www.textatron.com")
-        break;
+        break
         
       if i+1 >= MAX_TEXTS and len(msg) > (i+1)*160:
         CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
@@ -451,5 +451,4 @@ class Commander(Thread):
       if i < len(msg):
         time.sleep(1.5)
         
-    log('text', self.num+':'+str(unicode(msg, errors='ignore'))
-  
+    log('text', self.num+':'+str(unicode(msg, errors='ignore')))

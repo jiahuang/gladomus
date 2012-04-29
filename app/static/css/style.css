@@ -212,11 +212,11 @@ a:hover {
   cursor: hand; cursor: pointer;
 }
 .mainIcon{height:135px; width:135px;}
-.mapIcon{background: url(../site_imgs/map_icon2.jpg) no-repeat center center;}
-.anythingIcon{background: url(../site_imgs/anything_icon2.jpg) no-repeat center center;}
-.infoIcon{background: url(../site_imgs/information_icon.jpg) no-repeat center center;}
-.howItWorks{background: url(../site_imgs/howItWorks_icon2.jpg) no-repeat center center;}
-.logo{background: url(../site_imgs/logo1.jpg) no-repeat center center;}
+.mapIcon{background: url(../site_imgs/map_icon.png) no-repeat center center;}
+.anythingIcon{background: url(../site_imgs/anything_icon.png) no-repeat center center;}
+.infoIcon{background: url(../site_imgs/information_icon.png) no-repeat center center;}
+.howItWorks{background: url(../site_imgs/howItWorks_icon.png) no-repeat center center;}
+.logo{background: url(../site_imgs/logo1.png) no-repeat center center;}
 
 .circleLabelSmall{
   width:26px;
