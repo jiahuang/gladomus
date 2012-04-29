@@ -53,8 +53,8 @@ def autoPw(number):
   # updates associated number w/ pw
   salt = bcrypt.gensalt()
   hash = bcrypt.hashpw(pw, salt).decode()
-  print pw, hash
-  db.user.update({'number':number}, {'$set':{'pw':hash, 'salt':salt}})
+  print "autopw", pw, salt, hash
+  db.users.update({'number':number}, {'$set':{'pw':hash, 'salt':salt}})
   return pw
 
 def jsonCmd_res(objs, isCursor):
