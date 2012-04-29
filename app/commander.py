@@ -420,7 +420,7 @@ class Commander(Thread):
       else: # new cache for that number
         cache = db.Cache()      
         cache.number = unicode(self.num)
-        cache.data = msg
+        cache.data = unicode(msg)
         cache.index = index
         cache.time = currDate
         cache.save()
