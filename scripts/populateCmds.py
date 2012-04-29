@@ -10,7 +10,7 @@ def makeUser():
   user.requests = [req]
   user.freeMsg = 10000
   user.salt = unicode(bcrypt.gensalt())
-  user.pw = bcrypt.hashpw('123qwe', bcrypt.gensalt()).decode()
+  user.pw = bcrypt.hashpw('123qwe', user.salt).decode()
   user.save()
 
   user = db.Users()
@@ -20,7 +20,7 @@ def makeUser():
   user.requests = [req]
   user.freeMsg = 10000
   user.salt = unicode(bcrypt.gensalt())
-  user.pw = bcrypt.hashpw('123qwe', ).decode()
+  user.pw = bcrypt.hashpw('123qwe', user.salt).decode()
   user.save()
       
 def populateGlobals():
