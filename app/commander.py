@@ -314,7 +314,6 @@ class Commander(Thread):
         return self.customCommandHelper(matchCmds[0], cmd)
 
   def customCommandHelper(self, cmdId, userCmd):
-    print "custom"
     cmd = db.Commands.find_one({'_id':cmdId})
     # parse out userCmd according to switch operators
     if len(cmd.switches) > 0:
@@ -323,13 +322,15 @@ class Commander(Thread):
       
       switchLocs = []
       switches = []
+      #print "switches", cmd.switches
       for s in cmd.switches:
-        if userCmd.find(s['switch']+'.') >= 0:
-          switchLocs.append({'s':s['switch']+'.', 'loc':userCmd.find(s['switch']+'.')})
-        elif  s['default'] != '':
-          switches.append({'s':s['switch']+'.', 'data':s['default']})
-        else:
-          return {'error':'Error:missing '+s['switch']+' switch. ex:'+cmd.example}
+        if s['switch'] != '':
+          if userCmd.find(s['switch']+'.') >= 0:
+            switchLocs.append({'s':s['switch']+'.', 'loc':userCmd.find(s['switch']+'.')})
+          elif  s['default'] != '':
+            switches.append({'s':s['switch']+'.', 'data':s['default']})
+          else:
+            return {'error':'Error:missing '+s['switch']+' switch. ex:'+cmd.example}
         
       #sort by locs
       switchLocs = sorted(switchLocs, key=itemgetter('loc'))
@@ -346,6 +347,7 @@ class Commander(Thread):
       url = cmd.url
       #put together url with switches
       for s in switches:
+        print s['data']
         newUrl = url.replace('{'+s['s'][:-1]+'}', s['data'])
         if newUrl == url:
           # something went wrong. a command didnt get replaced
@@ -354,9 +356,8 @@ class Commander(Thread):
           url = newUrl
     else:
       url = cmd.url
-
-    print url
     try:
+      print url
       request = urllib2.Request(url)
       request.add_header("User-Agent", 'Texatron/0.1')
       raw = urllib2.urlopen(request)

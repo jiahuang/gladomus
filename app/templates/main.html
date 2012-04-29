@@ -2,6 +2,15 @@
 {% block head%}
 <script type="text/javascript">
 $(document).ready(function() {
+  $("#register").colorbox({
+    onComplete:function(){
+      $('#loginButton').click(clicked);
+      },
+    innerHeight:"280px",
+    innerWidth:"510px"
+    }
+  );
+  
   // nav arrow
   $('.navArrow').hide();
   $('#mainArrow').show();
@@ -19,7 +28,8 @@ $(document).ready(function() {
     </div> 
   </div>
   <div class="subMain center" style="width:570px;">
-    <span class="dgreen" style="font-size:18px;font-weight:bold;">10 texts/month free + 5 cents/text afterwards </span><input type="button" style="font-size:20px;"value="Free Registration"/>
+    <span class="dgreen" style="font-size:18px;font-weight:bold;">10 texts/month free + 5 cents/text afterwards </span>
+    <input id="register" type="button" style="font-size:20px;"value="Free Registration" href="{{ url_for('login') }}"/>
   </div>
   <div class="imageSpan" style="margin-top:80px;">
     <div style="float:left;">
@@ -36,7 +46,7 @@ $(document).ready(function() {
     </div>
   </div>
   <div class="clear"></div>
-  <div style="margin-top:50px;">
+  <div style="margin-top:80px;">
     <div class="mainSubHeading">
       How it works
     </div>
@@ -63,11 +73,11 @@ $(document).ready(function() {
       </div>
     </div>
     <div class="clear"></div>
-    <div class="howItWorks" style="height:280px; width:730px;"></div>
+    <div class="howItWorks" style="height:260px; width:730px;"></div>
     </div>
   </div>
   <div class="clear"></div>
-  <div style="margin-top:50px;">
+  <div style="margin-top:80px;">
     <div class="mainSubHeading">
       Try out some commands, free! Text to (1)919-666-3455
     </div>

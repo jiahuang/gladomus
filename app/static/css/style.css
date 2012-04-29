@@ -3,15 +3,6 @@
  * 2012
  */
 
-.lgreen{color:#C9E3C8}
-.dgreen{color:#496B50}
-.orange {color:#E0725C;}
-.gray{color:#8C8E8F;}
-.dblue {color:#00456B;}
-.lblue {color:#CEE5F5;}
-.red {color:#92140C;}
-.dgray{color:#454545;}
-
 .clear{clear:both;}
 .center{margin-left:auto; margin-right:auto;}
 
@@ -275,7 +266,7 @@ input[type="button"][disabled] {
 .circleLabelText{padding-top:5px; margin-left:40px; font: 13px Arial; color:#00456B; font-weight:bold;}
 
 .mainCircleDiv{margin-top:20px; margin-bottom:0px;}
-.mainCircleText{padding-top:5px; margin-left:35px; font: 13px Arial; color:#00456B; font-weight:bold;}
+.mainCircleText{padding-top:8px; margin-left:40px; font: 13px Arial; color:#00456B; font-weight:bold;}
 
 .text{font: 13px Arial; padding:3px; color:#454545;}
 .bold{font-weight:bold;}
@@ -288,7 +279,7 @@ input[type="button"][disabled] {
 .imageHeading{font-weight:bold; color:#00456B;}
 
 .mainText{margin-top:80px;font-size:35px; font-weight:bold; color:#00456B;}
-.mainExampleLabel{margin-top:8px; margin-bottom:5px;font: 15px Arial; color:#295231; font-weight:bold;}
+.mainExampleLabel{margin-top:20px; margin-bottom:5px;font: 15px Arial; color:#295231; font-weight:bold;}
 .mainExample{margin-bottom:5px; margin-left:20px; font:13px Arial; color:#616161; font-weight:bold;}
 .moreHelp{margin-top:5px; display:none;}
 .more:hover{color:#92140C; cursor: hand; cursor: pointer;}
@@ -350,3 +341,12 @@ input[type="button"][disabled] {
 	text-align: center;
 	font-size: 12px;
 }
+
+.lgreen{color:#C9E3C8}
+.dgreen{color:#496B50}
+.orange {color:#E0725C;}
+.gray{color:#8C8E8F;}
+.dblue {color:#00456B;}
+.lblue {color:#CEE5F5;}
+.red {color:#92140C;}
+.dgray{color:#454545;}

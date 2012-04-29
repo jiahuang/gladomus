@@ -20,6 +20,7 @@ from commander import Commander, clean
 import twilio.twiml
 from logger import log
 import simplejson
+from urlparse import urlparse
 
 ########################################################################
 # Configuration
@@ -82,6 +83,22 @@ def jsonCmd_res(objs, isCursor):
 
   return Response(json.dumps(jsonObjs), mimetype='application/json')
 
+# cleaning switches, includes, and excludes
+def cleanArray(arr, keys):
+  # make sure keys include valid values for each element in arr
+  newArr = []
+  for item in arr:
+    isEmpty = False
+    for key in keys:
+      if unicode(key) not in item:
+        return json_res({'error': 'Error: '+item+" is missing a value for "+key})
+      if item[key] == "":
+        isEmpty = True
+        break
+    if not isEmpty:
+      newArr.append(item)
+  return newArr
+
 ########################################################################
 # Routes
 ########################################################################
@@ -119,6 +136,7 @@ def commandsAjax():
       cmdList = db.Commands.find({'tested':True, '_keywords':search}).skip((page-1)*20).limit(20)
   else:
     if sortQuery >= 0:
+      print "sort"
       if sortByList[sortQuery] == 'added' and user:
         # sort by commands user has added
         userCmds = user.cmds
@@ -209,47 +227,63 @@ def logout():
   #flash('You were logged out')
   return redirect(url_for('main'))
 
-@app.route('/createCommands/test', methods=['POST'])
-def testCommand():
+@app.route('/createCommands/test/<cmdId>', methods=['POST'])
+def testCommand(cmdId="new"):
   # sets up fake command
+  # if cmdId is passed in, we are editing
+  isEdit = False
   try:
     inputCmd = json.loads(request.form.get('cmd', ''))
-    
-    #print inputCmd
-    # make sure user doesn't already have this command
+    testCmd = request.form.get('test', '')
     user = getUser()
     if user:
-      #return json_res({'error': 'Error: You must be logged in to create a command'})
-      userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1, 'tested':1}))
-      print userCmds
-      for userCmd in userCmds:
-        if userCmd['cmd'] == inputCmd['cmd'].lower():
-          if not userCmd['tested']:
-            # delete the old tested command
-            db.Commands.remove({'_id':userCmd['cmd']['_id']})
-          else:
-            return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
+      # check if its an edit
+      editingCmd = None
+      if cmdId != 'new' and pymongo.objectid.ObjectId(cmdId) in user.cmds:
+        editingCmd = db.Commands.find_one({"_id":pymongo.objectid.ObjectId(cmdId)})
+        if editingCmd:
+          isEdit = True
+          
+      if not editingCmd:
+      # not editing, new creation
+        userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1, 'tested':1}))
+        #rint userCmds
+        for userCmd in userCmds:
+          if userCmd['cmd'] == inputCmd['cmd'].lower():
+            if not userCmd['tested']:
+              # delete the old tested command
+              db.Commands.remove({'_id':userCmd['cmd']['_id']})
+            else:
+              return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
+        editingCmd = db.Commands()
+    
     else:
       user = getDefaultUser()
+
+    # checking url to make sure its legit
+    urlparts = urlparse(inputCmd['url'])
+    if not urlparts.scheme:
+      inputCmd['url'] = 'http://'+inputCmd['url']
+    editingCmd.cmd = inputCmd['cmd'].lower()
+    editingCmd.url =  inputCmd['url']
+    editingCmd.description = inputCmd['description']
+    editingCmd.example = inputCmd['example']
+    editingCmd.enumerate = inputCmd['enumerate']
+
+    editingCmd.switches = cleanArray(inputCmd['switches'], ['switch', 'description'])
+    editingCmd.includes = cleanArray(inputCmd['includes'], ['tag', 'matches'])
+    editingCmd.excludes = cleanArray(inputCmd['excludes'], ['tag', 'matches'])
+    editingCmd.owner = user._id
+    editingCmd.save()
+    if not isEdit:
+      user.cmds.append(editingCmd._id)
+      user.save()
     
-    postCmd = db.Commands()
-    postCmd.cmd = inputCmd['cmd'].lower()
-    postCmd.url = inputCmd['url'] # TODO: make sure this url is clean
-    postCmd.description = inputCmd['description']
-    postCmd.example = inputCmd['example']
-    postCmd.enumerate = inputCmd['enumerate']
-    postCmd.switches = inputCmd['switches']
-    postCmd.includes = inputCmd['includes']
-    postCmd.excludes = inputCmd['excludes']
-    postCmd.owner = user._id
-    postCmd.save()
-    user.cmds.append(postCmd._id)
-    user.save()
-    
-    session['cmd'] = postCmd._id #keep track of which command we saved
+    session['cmd'] = editingCmd._id #keep track of which command we saved
     #print postCmd._id
     com = Commander(user.number, 'gladomus')
-    res = com.customCommandHelper(postCmd._id, postCmd.example)
+    print 'test', testCmd
+    res = com.customCommandHelper(editingCmd._id, testCmd)
   except:
     return json_res({'error': 'Error: the command could not be tested. Make sure all the fields are properly formatted. Extended output:'+str(sys.exc_info())})
   # returns results
@@ -273,38 +307,10 @@ def addCommand(cmdId):
     flash('Error: you must be logged in to add commands')
   return json_res({'error':'you must be logged in to add a command'})
 
-@app.route('/createCommands/edit/<cmdId>', methods=['GET', 'POST'])
+@app.route('/createCommands/edit/<cmdId>', methods=['GET'])
 def editCommand(cmdId):
   # load up cmd with that id
   cmd = db.Commands.find_one({'_id':pymongo.objectid.ObjectId(cmdId)})
-  if request.method == 'POST':
-    # is an edit
-    postCmd = request.form.get('cmd')
-    # populate keywords
-    postCmd._keywords = populateKeywords([postCmd.switches, postCmd.descrip, postCmd.cmds, postCmd.examples])
-    # if user already owns this command, update it
-    user = getUser()
-    if user:
-      if cmdId in user.cmds:
-        # just edit the command and save it
-        db.Commands.update({'_id':cmdId}, {'$set':{postCmd}})
-      else:
-        # create new command and add it under user
-        newCmd = db.Commands
-        newCmd.setFields(postCmd)
-        newCmd.save()
-        user.cmds.append(newCmd._id)
-        user.save()
-    # if no user, add it with gladomus as the owner
-    else:
-      newCmd = db.Commands
-      newCmd.setFields(postCmd)
-      newCmd.save()
-      GLADOMUS_USER.cmds.append(newCmd._id)
-      GLADOMUS_USER.save()
-    #flash('Successfully added your command')
-    return redirect(url_for('commands'))
-  # GET
   if not cmd:
     # flash error
     #flash('Error: We could not find that command')
@@ -318,24 +324,11 @@ def createCommands():
   if request.method == "POST":
     try:
       inputCmd = json.loads(request.form.get('cmd', ''))
-      print inputCmd
+      inputCmd['switches'] = cleanArray(inputCmd['switches'], ['switch', 'description'])
+      inputCmd['includes'] = cleanArray(inputCmd['includes'], ['tag', 'matches'])
+      inputCmd['excludes'] = cleanArray(inputCmd['excludes'], ['tag', 'matches'])
       # make sure user doesn't already have this command
       user = getUser()
-      #userCmds = list(db.Commands.find({'_id':{'$in':user.cmds}}, {'cmd':1}))
-      #for userCmd in userCmds:
-      #  if userCmd['cmd'] == inputCmd['cmd'].lower():
-      #    return json_res({'error': 'Error: You already have a command with the same name. Please change the name'})
-      '''postCmd = db.Commands()
-      postCmd.cmd = inputCmd['cmd'].lower()
-      postCmd.url = inputCmd['url'] # TODO: make sure this url is clean
-      postCmd.description = inputCmd['description']
-      postCmd.example = inputCmd['example']
-      postCmd.enumerate = inputCmd['enumerate']
-      postCmd.switches = inputCmd['switches']
-      postCmd.includes = inputCmd['includes']
-      postCmd.excludes = inputCmd['excludes']
-      postCmd.owner = user._id
-      postCmd.save()'''    
       # check that the user has a tested cmd
       if "cmd" not in session:
         return json_res({'error': 'Error: you must test your command first.'})
@@ -345,8 +338,10 @@ def createCommands():
       # check to make sure that the tested command is the same as the one they are submitting
       for key in inputCmd:
         if cmd[key] != inputCmd[key]:
+          print key, cmd[key], inputCmd[key]
           return json_res({'error': 'Error: you must test your command first.'})
       cmd.tested = True
+      cmd.dateUpdated = datetime.datetime.utcnow()
       cmd.save()
       session.pop('cmd','') 
     except:

@@ -6,55 +6,56 @@
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/colorbox.css') }}">
 <link href='http://fonts.googleapis.com/css?family=Jockey+One' rel='stylesheet' type='text/css'>
-
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
 <script src="{{ url_for('static', filename='js/jquery.colorbox-min.js') }}"></script>
+<script type="text/javascript">
+var clicked = function(){
+  console.log('loginClicked');
+  $.post('/login', 
+    { number: $('#number').val(), password: $('#password').val()},
+    function(data){
+      console.log(data);
+      if ('error' in data){
+        $('#loginError').html(data.error);
+        $('#loginError').show();
+      }
+      else if ('success' in data){
+        window.location.reload();
+      }
+    }
+  )
+}
+$(document).ready(function() {
+  $("#login").colorbox({
+    onComplete:function(){
+      $('#loginButton').click(clicked);
+      },
+    innerHeight:"280px",
+    innerWidth:"510px",
+    }
+  );
+});
+</script>
 {% block head %}
 
 {% endblock %}
-<script type="text/javascript">
-$(document).ready(function() {
-  
-  $("#login").colorbox({onComplete:function(){
-      $('#loginButton').click(function(){
-      console.log('loginClicked');
-      $.post('/login', 
-        { number: $('#number').val(), password: $('#password').val()},
-        function(data){
-          console.log(data);
-          if ('error' in data){
-            $('#loginError').html(data.error);
-            $('#loginError').show();
-          }
-          else if ('success' in data){
-            window.location.reload();
-          }
-        }
-      )
-    });
-    }});
-});
-</script>
-
 </head>
 
 <body>
 <div id="wrap">
   <div id="header" style="padding-top:30px;">
     <div class="centered">
-          {% if not session.logged_in %}
           <div id="navlinks" style="margin-top:-30px;">
-            <a id="login" href="{{ url_for('login') }}">Login / Signup</a>
+            {% if not session.logged_in %}
+              <a id="login" href="{{ url_for('login') }}">Login / Signup</a>
+            {% else %}
+                <span class="orange">
+              {{session['free']}} free/{{session['free']}} paid msgs
+              </span>
+              <a href="/">{{ session['number'] }}</a>
+              <a href="{{ url_for('logout') }}">log out</a>
+            {%endif%}
           </div>
-          {% else %}
-          <div id="navlinks">
-            <span class="orange">
-            {{session['free']}} free/{{session['free']}} paid msgs
-            </span>
-            <a href="/">{{ session['number'] }}</a>
-            <a href="{{ url_for('logout') }}">log out</a>
-          </div>
-          {% endif %}
           <div style="float:left; position:relative;">
             <h1><a href="/" id="mainHeader"><div class="logo" style="position:absolute; height:50px; width:100px; top:-20px; left:140px;"></div>Textatron<span style="font-size:13px; font-weight:bold;"> alpha</span></a></h1>
             
@@ -64,11 +65,11 @@ $(document).ready(function() {
             <div style="margin-right:20px; float:left; width:200px">
               <span class="dblue" style="font-size:18px; font-weight:bold;">(1)919-666-3455</span>
             </div>
-            <div style="margin-right:20px; float:left; width:120px;">
+            <div style="margin-right:50px; float:left; width:120px;">
               <a href="{{ url_for('commands') }}">commands</a>
               <div class="navArrow" id="commandsArrow" style="margin-left:35px; margin-top:5px; display:none;"></div>
             </div>
-            <div style="margin-right:170px; float:left; width:150px;">
+            <div style="margin-right:140px; float:left; width:150px;">
               <a href="{{ url_for('createCommands') }}">create a command</a>
               <div class="navArrow" id="createArrow" style="margin-left:60px; margin-top:5px; display:none;"></div>
             </div>

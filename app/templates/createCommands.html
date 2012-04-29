@@ -96,9 +96,9 @@ $(document).ready(function() {
       example:$('#exampleInput').val(),
       url:$('#urlInput').val(), enumerate:$('#enumerateInput').is(':checked'),
       switches: switchesObj, includes: includesObj, excludes: excludesObj};
-    
+    console.log($('#testCmd').val());
     $.post(url, 
-			{ cmd: JSON.stringify(cmdObj)},
+			{ cmd: JSON.stringify(cmdObj), test:$('#testCmd').val()},
 			function(data){
         if (typeof resFunction == 'function')
           resFunction(data);
@@ -110,15 +110,20 @@ $(document).ready(function() {
   }
 
   $('#submit').click(function(){
+    var THIS = $(this);
+    THIS.attr('disabled', 'disabled');
     postCommand('/createCommands/new', function(data){
       if ("error" in data){
-        $('#saveReady').val(data['error']);
+        console.log(data);
+        $('#saveReady').html(data['error']);
         $('#saveReady').addClass('red');
-        $('#saveReady').html("There are some errors in your test command and we couldn't execute it.");
+        //$('#saveReady').html("There are some errors in your test command and we couldn't execute it.");
       }
       else if ("success" in data){
         $('#saveReady').val(data['success']);
         $('#saveReady').removeClass('red');
+        $('#saveReady').addClass('dblue');
+        $('#saveReady').html("The command was saved");
       }
     });
   });
@@ -128,9 +133,10 @@ $(document).ready(function() {
     THIS.attr('disabled', 'disabled');
     $('#testOutput').val('Please wait as we execute the command...');
     $('#testOutput').removeClass('red');
-    postCommand('/createCommands/test', function(data){
+    postCommand('/createCommands/test/{%if cmd%}{{cmd._id}}{%else%}new{%endif%}', function(data){
       console.log(data)
       THIS.attr('disabled', false);
+      $('#saveReady').removeClass('dblue');
       if ("error" in data){
         $('#testOutput').val(data['error']);
         $('#testOutput').addClass('red');
@@ -251,11 +257,11 @@ $(document).ready(function() {
             <tr>
             <td><div class="addCmd" type="switch">+</div></td>
             <td><div class="createLabelInner">Switch</div></td>
-            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: s" value=""/></td>
+            <td><input type="text" class="createInput  {%if cmd is not defined%}exampleDisplay" exampleInput="example: s"{%else%}"{%endif%} value=""/></td>
             <td><div class="createLabelInner" style="width:75px;">Description</div></td>
-            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: subreddit" value=""/></td>
+            <td><input type="text" class="createInput  {%if cmd is not defined%}exampleDisplay" exampleInput="example: subreddit"{%else%}"{%endif%} value=""/></td>
             <td><div class="createLabelInner">Default</div></td>
-            <td><input type="text" class="createInput  exampleDisplay" exampleInput="example: all" value=""/></td>
+            <td><input type="text" class="createInput  {%if cmd is not defined%}exampleDisplay" exampleInput="example: all"{%else%}"{%endif%} value=""/></td>
             </tr>
           {%endif%}
           </tbody>
@@ -305,15 +311,15 @@ $(document).ready(function() {
           <tr>
             <td><div class="addCmd" type="outer">+</div></td>
             <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
-            <td><input type="text" class="createInput exampleDisplay" exampleInput="example: a" value=""/></td>
+            <td><input type="text" class="createInput {%if cmd is not defined%}exampleDisplay" exampleInput="example: a"{%else%}"{%endif%} value=""/></td>
             <td>
               <table>
                 <tr>
                 <td><div class="addCmd" type="inner">+</div></td>
                 <td><div class="createLabelInner">Attribute</div></td>
-                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
+                <td><input type="text" class="createInput tagInner {%if cmd is not defined%}exampleDisplay" exampleInput="example: class"{%else%}"{%endif%} value=""/></td>
                 <td><div class="createLabelInner" style="width:40px;">Value</div></td>
-                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: title" value=""/></td>
+                <td><input type="text" class="createInput tagInner {%if cmd is not defined%}exampleDisplay" exampleInput="example: title"{%else%}"{%endif%} value=""/></td>
                 </tr>
               </table>
             </td>
@@ -362,15 +368,15 @@ $(document).ready(function() {
           <tr>
             <td><div class="addCmd" type="outer">+</div></td>
             <td><div class="createLabelInner" style="width:35px;">Tag</div></td>
-            <td><input type="text" class="createInput exampleDisplay" exampleInput="example: div" value=""/></td>
+            <td><input type="text" class="createInput {%if cmd is not defined%}exampleDisplay" exampleInput="example: div"{%else%}"{%endif%} value=""/></td>
             <td>
               <table>
                 <tr>
                 <td><div class="addCmd" type="inner">+</div></td>
                 <td><div class="createLabelInner">Attribute</div></td>
-                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: class" value=""/></td>
+                <td><input type="text" class="createInput tagInner {%if cmd is not defined%}exampleDisplay" exampleInput="example: class"{%else%}"{%endif%} value=""/></td>
                 <td><div class="createLabelInner" style="width:40px;">Value</div></td>
-                <td><input type="text" class="createInput tagInner exampleDisplay" exampleInput="example: promotedlink" value=""/></td>
+                <td><input type="text" class="createInput tagInner {%if cmd is not defined%}exampleDisplay" exampleInput="example: promotedlink"{%else%}"{%endif%} value=""/></td>
                 </tr>
               </table>
             </td>
@@ -391,11 +397,11 @@ $(document).ready(function() {
     <table class="tableInput">
     <tr>
       <td class="tdSpacing" width="100px;"><div class="createLabel">Description</div></td>
-      <td colspan='3' class="tdSpacing"><textarea id="descriptionInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" style="width:625px;" exampleInput="example: Returns the headlines on the first page of a subreddit. If a subreddit isn't defined, it defaults to /r/all">{%if cmd is defined%}{{cmd.description}}{%endif%}</textarea></td>
+      <td colspan='3' class="tdSpacing"><textarea id="descriptionInput" class="createInput {%if cmd is not defined%}exampleDisplay" exampleInput="example: Returns the headlines on the first page of a subreddit. If a subreddit isn't defined, it defaults to /r/all"{%else%}"{%endif%} style="width:625px;" >{%if cmd is defined%}{{cmd.description}}{%endif%}</textarea></td>
     </tr>
     <tr>
       <td class="tdSpacing"><div class="createLabel">Example</div></td>
-      <td class="tdSpacing"><input type="text" id="exampleInput" class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="example: reddit s.worldnews" value="{%if cmd is defined%}{{cmd.example}}{%endif%}"/></td>
+      <td class="tdSpacing"><input type="text" id="exampleInput" class="createInput {%if cmd is not defined%}exampleDisplay" exampleInput="example: reddit s.worldnews"{%else%}"{%endif%} value="{%if cmd is defined%}{{cmd.example}}{%endif%}"/></td>
     </tr>
   </table>
   <div class="circleDiv">
@@ -404,14 +410,14 @@ $(document).ready(function() {
     <div class="clear"></div>
   </div>
   <div class="tableInput"> 
-    <input type="text"  class="createInput exampleDisplay" exampleInput="reddit s.worldnews" style="width:300px;" id="testCmd"/>
+    <input type="text"  class="createInput {%if cmd is not defined%}exampleDisplay{%endif%}" exampleInput="reddit s.worldnews" style="width:300px;" id="testCmd" {%if cmd is defined%}value="{{cmd.example}}"{%endif%}/>
     <input type="button" id="testButton" value="Test"/>
     <br/>
     <div style="margin-top:10px; font: 13px Arial; color:#454545; font-weight:bold;">Output from the test...</div>
     <textarea id="testOutput" class="createInput" style="width:735px; height:130px;" disabled="disabled"></textarea>
     <br/>
     </div>
-  <div id="saveReady" style="margin-top:20px; font: 13px Arial; color:#454545; font-weight:bold; float:right; margin-right:25px;">You must test your command before you can save it.</div>
+  <div id="saveReady" class="createLabel" style="margin-top:20px; float:right; margin-right:25px;">You must test your command before you can save it.</div>
   <div class="clear"></div>
   <input type="button" id="submit" style="float:right; margin-right:25px; margin-top:10px;"value="Save Command" disabled="disabled"/>
 </div>
