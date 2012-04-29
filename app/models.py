@@ -27,6 +27,7 @@ class Users(Document):
     }],
     'cmds': [pymongo.objectid.ObjectId], #custom commands they've added
     'pw' : unicode,
+    'salt': unicode,
   }
   # ensuring unique numbers
   indexes = [{ 
