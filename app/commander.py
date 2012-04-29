@@ -399,6 +399,7 @@ class Commander(Thread):
     return foundText
 
   def processMsg(self, msg, isNewMsg=True, cache=True):
+    print "process Msg", msg
     if cache:
       # CACHE RES
       cacheNumber = db.cache.find_one({'number':self.num})
@@ -422,9 +423,9 @@ class Commander(Thread):
         cache.index = index
         cache.time = currDate
         cache.save()
-    
     i = 0
     while i*160 < len(msg) and i<MAX_TEXTS:
+      print "sending msg"
       if user.freeMsg > 0:
         user.freeMsg = user.freeMsg - 1
       elif user.paidMsg > 0:
