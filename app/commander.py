@@ -451,5 +451,5 @@ class Commander(Thread):
       if i < len(msg):
         time.sleep(1.5)
         
-    log('text', self.num+':'+msg)
+    log('text', self.num+':'+str(unicode(msg, errors='ignore'))
   
