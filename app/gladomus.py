@@ -374,7 +374,7 @@ def login():
 
     hash = None
     try:
-      hash = bcrypt.hashpw(request.form.get('password'), user.pw)
+      hash = bcrypt.hashpw(request.form.get('password'), bcrypt.gensalt())
     except:
       pass
     if hash != user.pw:
