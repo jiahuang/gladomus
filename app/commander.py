@@ -300,8 +300,9 @@ class Commander(Thread):
       return {'error':cmdHeader+' command not found. Go to www.texatron.com/commands for a list of commands'} #TODO: add suggestions module?
     elif customCmds.count() == 1:
       # if only one custom command returns and user doesnt have that command on their list, add it
+      customCmds = list(customCmds)
       if customCmds[0]._id not in user.cmds:
-        self.user.cmds.append(cmd[0]._id)
+        self.user.cmds.append(customCmds[0]._id)
         self.user.save()
       return self.customCommandHelper(customCmds[0]['_id'], cmd)
     # if more than one returns, check user's list
