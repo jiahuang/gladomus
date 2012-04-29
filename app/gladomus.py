@@ -183,7 +183,7 @@ def requests():
       com.processMsg("You do not have a Gladomus account. Text 'signup' to signup for Gladomus.", False, False)
     return json_res({'success': 'new pw hit'})
 
-  if not user or (user['freeMsg'] < 1 and user['paidMsg'] < 1) :
+  if not user or (user['freeMsg'] > 0 or user['paidMsg'] > 0) :
     # add it to cmd queue and add it to numbers collection
     if not user:
       # new user, auto generate pw and text them
