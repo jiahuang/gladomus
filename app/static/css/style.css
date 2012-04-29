@@ -76,12 +76,16 @@ tr.spaceUnder > td
 }
 
 .navArrow {
-	width: 0;
+	/*width: 0;
 	height: 0;
+  */
+  position:absolute;
 	border-left: 7px solid transparent;
 	border-right: 7px solid transparent;
   float:left;
 	border-bottom: 10px solid #E0725C;
+  height:0px;
+  width:0px;
 }
 
 h1 {
@@ -216,7 +220,7 @@ a:hover {
 .anythingIcon{background: url(../site_imgs/anything_icon.png) no-repeat center center;}
 .infoIcon{background: url(../site_imgs/information_icon.png) no-repeat center center;}
 .howItWorks{background: url(../site_imgs/howItWorks_icon.png) no-repeat center center;}
-.logo{background: url(../site_imgs/logo1.png) no-repeat center center;}
+.logo{background: url(../site_imgs/logo.png) no-repeat center center; height:67px; padding-bottom:20px; width:220px;}
 
 .circleLabelSmall{
   width:26px;

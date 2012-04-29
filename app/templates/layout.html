@@ -43,9 +43,9 @@ $(document).ready(function() {
 
 <body>
 <div id="wrap">
-  <div id="header" style="padding-top:30px;">
-    <div class="centered">
-          <div id="navlinks" style="margin-top:-30px;">
+  <div id="header">
+    <div class="centered" style="vertical-align:bottom;">
+          <div id="navlinks" >
             {% if not session.logged_in %}
               <a id="login" href="{{ url_for('login') }}">Login / Signup</a>
             {% else %}
@@ -56,22 +56,21 @@ $(document).ready(function() {
               <a href="{{ url_for('logout') }}">log out</a>
             {%endif%}
           </div>
-          <div style="float:left; position:relative;">
-            <h1><a href="/" id="mainHeader"><div class="logo" style="position:absolute; height:50px; width:100px; top:-20px; left:140px;"></div>Textatron<span style="font-size:13px; font-weight:bold;"> alpha</span></a></h1>
-            
+          <div style="float:left;">
+            <a href="/" id="mainHeader"><div class="logo"></div></a>
             <div class="navArrow" id="mainArrow" style="margin-left:90px; margin-top:-10px; display:none;"></div>
           </div>
-          <div id="subheadings" style="float:right; margin-top:30px;">
+          <div id="subheadings" style="float:right; padding-top:15px;">
             <div style="margin-right:20px; float:left; width:200px">
               <span class="dblue" style="font-size:18px; font-weight:bold;">(1)919-666-3455</span>
             </div>
-            <div style="margin-right:50px; float:left; width:120px;">
+            <div style="margin-right:50px; float:left; width:120px; position:relative;">
               <a href="{{ url_for('commands') }}">commands</a>
-              <div class="navArrow" id="commandsArrow" style="margin-left:35px; margin-top:5px; display:none;"></div>
+              <div class="navArrow" id="commandsArrow" style="top:25px; left:35px; display:none;"></div>
             </div>
-            <div style="margin-right:140px; float:left; width:150px;">
+            <div style="margin-right:140px; float:left; width:150px; position:relative;">
               <a href="{{ url_for('createCommands') }}">create a command</a>
-              <div class="navArrow" id="createArrow" style="margin-left:60px; margin-top:5px; display:none;"></div>
+              <div class="navArrow" id="createArrow" style="top:25px; left:65px; display:none;"></div>
             </div>
           </div>
     </div>
