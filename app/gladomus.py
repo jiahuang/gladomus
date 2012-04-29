@@ -192,7 +192,8 @@ def requests():
       user.requests = [req]
       user.save()
       pw = autoPw(fromNumber)
-      #com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
+      if msg == 'signup':
+        com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
     else:
       db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
       
