@@ -141,7 +141,7 @@ class Commander(Thread):
     for r in replace:
       cmd = cmd.replace(r, "")
     if not isProperCmd(['a:'], cmd):
-      return {"error": "Wiki command must have an (a:)rticle specified, ex:wiki a:rabbits"}
+      return {"error": "Wiki command must have an (a:)rticle specified, ex:wiki a.rabbits"}
     
     [article, section] = parseDoubleCommand('a:', 's:', cmd)
     article = clean(article)
@@ -176,7 +176,7 @@ class Commander(Thread):
           if section == 'toc': #grab table of contents
             tocDiv = soup.find('div', {'id':'toctitle'})
             if tocDiv == None:
-              return {'error': 'The article is too short to have a table of contents. Try "wiki a:'+article+'" to get the summary'}
+              return {'error': 'The article is too short to have a table of contents. Try "wiki a.'+article+'" to get the summary'}
             toc = tocDiv.nextSibling
             toc = toc.findAll(text=True)
             res = ''.join(toc)
@@ -186,18 +186,18 @@ class Commander(Thread):
               section = soup.find(text=section).parent.parent['href'][1:]#cut off the '#'
               header = soup.find('span', {'id':section})
               if header == None:
-                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+                return {'error': 'The section was not found in the article. Try "wiki a.'+article+' s.toc" to see a table of contents'}
             else:
               headers = soup.findAll(text=re.compile(r'\A'+section, re.IGNORECASE))
               if len(headers) == 0:
-                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+                return {'error': 'The section was not found in the article. Try "wiki a.'+article+' s.toc" to see a table of contents'}
               # check to make sure all found headers are spans with class mw-headline
               cleanedHeaders = []
               for header in headers:
                 if header.parent.name == 'span':
                   cleanedHeaders.append(header)
               if len(cleanedHeaders) == 0:
-                return {'error': 'The section was not found in the article. Try "wiki a:'+article+' s:toc" to see a table of contents'}
+                return {'error': 'The section was not found in the article. Try "wiki a.'+article+' s.toc" to see a table of contents'}
               header = cleanedHeader[-1].parent
             p = header.findNext('p')
             res = ''.join(p.findAll(text=True))

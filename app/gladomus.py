@@ -186,11 +186,11 @@ def requests():
     pw = autoPw(fromNumber)
     if msg.lower() == 'signup' or msg.lower() == "newpw":
       com = Commander(fromNumber, 'gladomus') #reinitiate because we just created the user
-      com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)      
+      com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw, False, False)      
   elif msg.lower() == 'signup':
     # they already called another command before signup
     pw = autoPw(fromNumber)
-    com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
+    com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw, False, False)
   elif msg.lower() == 'newpw':
     pw = autoPw(fromNumber)
     com.processMsg("Your password has been reset to: "+pw, False, False)
