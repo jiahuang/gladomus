@@ -283,8 +283,6 @@ class Commander(Thread):
         self.processMsg(res['success'])
     else:
       res = self.performCustomCommand(cmd)
-      if isTest:
-          return res 
       if "error" in res:
         self.processMsg(res["error"])
       else:
