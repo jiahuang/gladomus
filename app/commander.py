@@ -59,6 +59,9 @@ def isProperCmd(cmdReqs, cmd):
 class Commander(Thread):
   def __init__(self, fromNumber, cmd):
     self.num = fromNumber
+    print "commander number", fromNumber
+    self.user = db.Users.find_one({"number":fromNumber})
+    print "commander user", self.user
     self.moreText = '(txt "more" to cont)'
     self.cmd = cmd
     Thread.__init__(self)
@@ -291,7 +294,6 @@ class Commander(Thread):
     cmdHeader = cmd.split(' ')[0]
     # look through custom commands
     customCmds = db.Commands.find({'tested':True, 'cmd':cmdHeader}, {'_id':1})
-    user = db.Users.find_one({'number':self.num})
     
     if customCmds.count() == 0:
       # if no results, error out
@@ -299,8 +301,8 @@ class Commander(Thread):
     elif customCmds.count() == 1:
       # if only one custom command returns and user doesnt have that command on their list, add it
       if customCmds[0]._id not in user.cmds:
-        user.cmds.append(cmd[0]._id)
-        user.save()
+        self.user.cmds.append(cmd[0]._id)
+        self.user.save()
       return self.customCommandHelper(customCmds[0]['_id'], cmd)
     # if more than one returns, check user's list
     elif customCmds.count() > 1:
@@ -426,29 +428,29 @@ class Commander(Thread):
     i = 0
     while i*160 < len(msg) and i<MAX_TEXTS:
       print "sending msg"
-      if user.freeMsg > 0:
-        user.freeMsg = user.freeMsg - 1
-      elif user.paidMsg > 0:
-        user.paidMsg = user.paidMsg - 1
+      if self.user.freeMsg > 0:
+        self.user.freeMsg = self.user.freeMsg - 1
+      elif self.user.paidMsg > 0:
+        self.user.paidMsg = self.user.paidMsg - 1
       else:
-        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = "You have used up your texts. Buy more at www.textatron.com")
+        CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = "You have used up your texts. Buy more at www.textatron.com")
         break;
         
       if i+1 >= MAX_TEXTS and len(msg) > (i+1)*160:
-        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
+        CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText)
         #print self.msg[i*160:(i+1)*160-len(self.moreText)]+self.moreText
       elif (i+1)*160 <= len(msg):
-        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:(i+1)*160])
+        CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = msg[i*160:(i+1)*160])
         #print self.msg[i*160:(i+1)*160]
       else:
-        CLIENT.sms.messages.create(to=self.num, from_="+1"+TWILIO_NUM, body = msg[i*160:])
+        CLIENT.sms.messages.create(to=self.num, from_=TWILIO_NUM, body = msg[i*160:])
         #print self.msg[i*160:]
-      user = db.Users.find({'number':self.num})
-      
+
+      self.user.save()
       i = i + 1
       #sleep 1.5 seconds
       if i < len(msg):
         time.sleep(1.5)
         
-    log('text', self.num+':'.msg)
+    log('text', self.num+':'+msg)
   

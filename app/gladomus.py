@@ -172,38 +172,34 @@ def requests():
   currDate = datetime.datetime.utcnow()
   user = db.users.find_one({'number': fromNumber})
   req = {'time':currDate, 'message':msg}
-
   com = Commander(fromNumber, 'gladomus')
-  # if command is reset password
-  if msg == 'newpw':
-    if user:
-      pw = autoPw(fromNumber)
-      com.processMsg("Your password has been reset to: "+pw, False, False)
-    else:
-      com.processMsg("You do not have a Gladomus account. Text 'signup' to signup for Gladomus.", False, False)
-    return json_res({'success': 'new pw hit'})
-
-  if not user or (user['freeMsg'] > 0 or user['paidMsg'] > 0) :
-    # add it to cmd queue and add it to numbers collection
-    if not user:
-      # new user, auto generate pw and text them
-      user = db.Users()
-      user.number = fromNumber
-      user.requests = [req]
-      user.save()
-      pw = autoPw(fromNumber)
-      if msg == 'signup':
-        com.processMsg("Welcome to Gladomus. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
-    else:
-      db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
-      
-    log('access', "REACHED: new request "+msg+" from "+fromNumber)
-    Commander(fromNumber, msg).start()
-  else:
+  
+  if not user:
+    # new user, auto generate pw and text them
+    user = db.Users()
+    user.number = fromNumber
+    user.requests = [req]
+    user.save()
+    pw = autoPw(fromNumber)
+    if msg.lower() == 'signup' or msg.lower() == "newpw":
+      com = Commander(fromNumber, 'gladomus') #reinitiate because we just created the user
+      com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)      
+  elif msg.lower() == 'signup':
+    # they already called another command before signup
+    pw = autoPw(fromNumber)
+    com.processMsg("Welcome to Textatron. You can log in with this number and this auto generated password: "+pw+" Text 'help' for a list of commands", False, False)
+  elif msg.lower() == 'newpw':
+    pw = autoPw(fromNumber)
+    com.processMsg("Your password has been reset to: "+pw, False, False)
+  elif user['freeMsg'] < 0 and user['paidMsg'] < 0:
     # they need to pay
     db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
     log('access', "REACHED: Need to pay "+fromNumber)
     com.processMsg("You have used up your texts. Add more at www.textatron.com", False, False)
+  else:
+    db.users.update({'number':fromNumber}, {'$push':{'requests':req}})
+    log('access', "REACHED: new request "+msg+" from "+fromNumber)
+    Commander(fromNumber, msg).start()
   
   return json_res({'success': 'hit requests'})
 
@@ -374,7 +370,7 @@ def login():
     user = db.Users.find_one({'number': number})
     
     if not user:
-      return json_res({'error':'Either the number or the password is not in our system.'})
+      return json_res({'error':'Either the number or the password is not in our system. Did you put in the right country code?'})
 
     hash = None
     try:
