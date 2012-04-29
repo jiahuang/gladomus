@@ -51,7 +51,9 @@ def json_res(obj):
 def autoPw(number):
   pw = generatePw()
   # updates associated number w/ pw
-  db.user.update({'number':number}, {'$set':{'pw':bcrypt.hashpw(pw, bcrypt.gensalt()).decode()}})
+  hash = bcrypt.hashpw(pw, bcrypt.gensalt()).decode()
+  print pw, hash
+  db.user.update({'number':number}, {'$set':{'pw':hash}})
   return pw
 
 def jsonCmd_res(objs, isCursor):
@@ -374,7 +376,7 @@ def login():
 
     hash = None
     try:
-      hash = bcrypt.hashpw(request.form.get('password'), bcrypt.gensalt())
+      hash = bcrypt.hashpw(request.form.get('password'), user.pw)
     except:
       pass
     if hash != user.pw:
